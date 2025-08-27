@@ -45,7 +45,7 @@ export interface GameResponse {
 export type LobbyRequest =
   | { action: "accept" | "deny" }
   | { action: "create"; name: string }
-  | { action: "request"; game_id: string; message: string; name: string }
+  | { action: "request"; gameId: string; message: string; name: string }
 
 export type LobbyResponse =
   | Array<string>

@@ -1,6 +1,7 @@
 import type { IncomingMessage } from "http"
 import type { Duplex } from "stream"
 import { WebSocket, WebSocketServer } from "ws"
+import { LobbyRequest } from "../lib/types"
 import { hasChars } from "../lib/utils"
 import { decrypt } from "./jose"
 
@@ -59,6 +60,10 @@ wss.on("lobby", async (lobbyClient: LobbyClient) => {
   lobbyClients.add(lobbyClient)
   lobbyClient.on("close", () => {
     lobbyClients.delete(lobbyClient)
+  })
+  lobbyClient.on("message", async raw_data => {
+    let data: LobbyRequest = JSON.parse(raw_data.toString())
+    console.log(data)
   })
   lobbyClient.on("ping", () => {
     lobbyClient.alive = true
