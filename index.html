@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+    />
+    <meta content="ie=edge" http-equiv="X-UA-Compatible" />
+    <meta
+      content="no-cache, no-store, must-revalidate"
+      http-equiv="Cache-Control"
+    />
+    <meta content="no-cache" http-equiv="Pragma" />
+    <meta content="0" http-equiv="Expires" />
+    <meta
+      content="Online multiplayer movie and actor game"
+      data-react-helmet="true"
+      name="description"
+    />
+    <meta content="BOMB" property="og:title" translate="no" />
+    <meta
+      content="Online multiplayer movie and actor game"
+      data-react-helmet="true"
+      property="og:description"
+    />
+    <meta content="summary_large_image" name="twitter:card" />
+    <meta content="BOMB" name="twitter:title" translate="no" />
+    <meta
+      content="Online multiplayer movie and actor game"
+      data-react-helmet="true"
+      name="twitter:description"
+    />
+    <link href="/favicon.ico" rel="icon" type="image/x-icon" />
+    <link href="/apple-icon.png" rel="apple-touch-icon" sizes="180x180" />
+    <link href="/icon32.png" type="image/png" rel="icon" sizes="32x32" />
+    <link href="/icon16.png" type="image/png" rel="icon" sizes="16x16" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <title translate="no">BOMB</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
+      rel="preload"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+    <style>
+      :root {
+        --blue: #1d4ed8;
+        --dark: #121212;
+        --gray: #374151;
+        --light: #fefefe;
+        --slate: #334155;
+
+        --bg-blue: #1d4ed8;
+        --bg: var(--light);
+        --fg: var(--dark);
+      }
+
+      :root:has(body.dark) {
+        --blue: #60a5fa;
+        --gray: #d1d5db;
+        --slate: #cbd5e1;
+
+        --bg: var(--dark);
+        --fg: var(--light);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background-color: var(--bg);
+        color: var(--fg);
+      }
+
+      body {
+        font-family: Roboto, sans-serif;
+        margin: 0;
+        padding: 1.25rem;
+      }
+
+      body.dark {
+        color-scheme: dark;
+      }
+
+      header div {
+        align-items: center;
+        display: flex;
+        font-size: 1.25rem;
+        text-decoration: none;
+      }
+
+      main {
+        margin-inline: auto;
+        max-width: 40rem;
+      }
+
+      h1 {
+        font-size: clamp(1.5rem, 6.25vmin, 2rem);
+      }
+
+      h2 {
+        font-size: clamp(1.375rem, 5vmin, 1.75rem);
+      }
+
+      h3 {
+        font-size: clamp(1.25rem, 4vmin, 1.5rem);
+      }
+
+      ol,
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      @media not all and (min-width: 400px) {
+        html {
+          font-size: 14px;
+        }
+      }
+
+      @media (min-width: 800px) and (min-height: 800px) {
+        html {
+          font-size: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body class="dark">
+    <header>
+      <div><img height="32" src="/icon192.png" width="32" />BOMB</div>
+    </header>
+    <main>
+      <h1>Lobby</h1>
+      <div class="instructions">
+        <section>
+          <h3>Gameplay</h3>
+          <p>
+            The host starts the game by naming a movie or actor. The next player
+            then names an actor from the movie or a movie starring the actor.
+            Play continues this way until a player is stumped, at which point
+            they can challenge. The previous player then has to name another
+            actor from the previous movie or another movie starring the previous
+            actor. If they succeed, the challenging player receives a letter,
+            and if not, the challenged player receives a letter. Players are
+            eliminated once they've spelled out the word BOMB, and the game ends
+            when all players but one have been eliminated. That player is the
+            winner!
+          </p>
+        </section>
+        <section>
+          <h3>Creating and Joining Games</h3>
+          <p>
+            You can create a game by entering your name. As the game creator,
+            you will then be able to approve or reject join requests from other
+            players, and also determine when to start your game. Once a game has
+            started, no one else can join. Players can be removed by the host
+            and will automatically be booted for inactivity.
+          </p>
+          <p>
+            To request to join another game, simply click its "Request to Join"
+            button and enter your name. You can optionally also add a message to
+            the creator. The creator will then admit or reject you. You can play
+            one game at a time.
+          </p>
+        </section>
+      </div>
+    </main>
+    <footer></footer>
+    <script src="/app/main.ts" type="module"></script>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+  </body>
+</html>
