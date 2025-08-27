@@ -1,8 +1,22 @@
 {
   "author": "Max Monis",
+  "dependencies": {
+    "@types/express": "^4.17.23",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0",
+    "http": "^0.0.1-security"
+  },
   "description": "Online multiplayer movie and actor game",
   "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
     "@types/node": "^24.3.0",
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.10",
     "prettier": "^3.6.2",
     "prettier-plugin-organize-imports": "^4.2.0",
     "typescript": "^5.9.2",
@@ -10,9 +24,9 @@
   },
   "name": "bomb",
   "scripts": {
-    "build": "tsc && vite build --emptyOutDir",
-    "dev": "vite --host",
-    "prod": "npm run build && vite preview"
+    "build": "tsc && vite build --emptyOutDir && node esbuild.mjs",
+    "dev": "concurrently -n client,server \"vite --host\" \"nodemon --watch api --ext ts --exec 'node esbuild.mjs && node .build/api/server.js'\"",
+    "prod": "vite build --emptyOutDir && node esbuild.mjs && NODE_ENV=production PORT=3000 node .build/api/server.js"
   },
   "version": "0.0.0"
 }
