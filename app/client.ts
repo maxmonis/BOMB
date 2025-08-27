@@ -29,8 +29,8 @@ class Emitter<
   K extends "lobby",
   T extends K extends "lobby"
     ?
-        | { action: "create"; name: string }
-        | { action: "request"; message: string; name: string }
+        | { key: "create"; name: string }
+        | { key: "request"; message: string; name: string }
     : never
 > {
   private readonly key: `CustomEvent:${K}`
@@ -42,8 +42,8 @@ class Emitter<
   }
   listen(callback: (data: T) => void) {
     document.addEventListener(this.key, event => {
-      let custom_event = event as CustomEvent
-      callback(custom_event.detail.data)
+      let customEvent = event as CustomEvent
+      callback(customEvent.detail.data)
     })
   }
 }

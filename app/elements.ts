@@ -29,7 +29,7 @@ createGameForm.addEventListener("submit", e => {
     createGameInput.focus()
     return
   }
-  lobbyEmitter.post({ action: "create", name })
+  lobbyEmitter.post({ key: "create", name })
 })
 
 let availableGamesTitle = document.createElement("h2")
@@ -59,15 +59,18 @@ let nameFormButton = document.createElement("button")
 nameFormButton.textContent = "Send Request"
 joinRequestForm.addEventListener("submit", e => {
   e.preventDefault()
-  let name = nameInput.value
+  let name = nameInput.value.trim()
+  let message = messageTextarea.value.trim()
   if (!hasChars(name)) {
     nameInput.value = ""
     nameInput.focus()
     return
   }
+  nameInput.value = ""
+  messageTextarea.value = ""
   lobbyEmitter.post({
-    action: "request",
-    message: messageTextarea.value,
+    key: "request",
+    message,
     name
   })
 })
@@ -77,3 +80,12 @@ export let pendingState = document.createElement("div")
 pendingState.textContent =
   "Your join request has been submitted and you will be " +
   "notified when the host accepts or rejects your request."
+
+export let waitingRoom = document.createElement("div")
+let playerListContainer = document.createElement("div")
+let playerListTitle = document.createElement("h2")
+playerListTitle.textContent = "Current Players"
+export let admittedPlayerList = document.createElement("ul")
+playerListContainer.append(playerListTitle, admittedPlayerList)
+export let pendingPlayerList = document.createElement("ul")
+waitingRoom.append(playerListContainer, pendingPlayerList)

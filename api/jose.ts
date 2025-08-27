@@ -1,4 +1,7 @@
+import { config } from "dotenv"
 import { type JWTPayload, type ProduceJWT, SignJWT, jwtVerify } from "jose"
+
+config()
 
 export async function decrypt(jwt: string) {
   let { payload } = await jwtVerify(jwt, key, { algorithms: ["HS256"] })

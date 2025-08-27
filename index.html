@@ -53,35 +53,29 @@
     </noscript>
     <style>
       :root {
+        --bg-blue: #1d4ed8;
+        --bg: var(--light);
         --blue: #1d4ed8;
         --dark: #121212;
+        --fg: var(--dark);
         --gray: #374151;
         --light: #fefefe;
         --slate: #334155;
-
-        --bg-blue: #1d4ed8;
-        --bg: var(--light);
-        --fg: var(--dark);
       }
-
       :root:has(body.dark) {
+        --bg: var(--dark);
         --blue: #60a5fa;
+        --fg: var(--light);
         --gray: #d1d5db;
         --slate: #cbd5e1;
-
-        --bg: var(--dark);
-        --fg: var(--light);
       }
-
       * {
         box-sizing: border-box;
       }
-
       html {
         background-color: var(--bg);
         color: var(--fg);
       }
-
       body {
         display: flex;
         flex-direction: column;
@@ -92,23 +86,19 @@
         overflow-x: hidden;
         padding: 1.25rem;
       }
-
       body.dark {
         color-scheme: dark;
       }
-
       header div {
         align-items: center;
         display: flex;
         font-size: 1.25rem;
         text-decoration: none;
       }
-
       main {
         margin-inline: auto;
         max-width: 40rem;
       }
-
       footer {
         display: flex;
         flex-direction: column;
@@ -116,92 +106,48 @@
         margin-block: auto 0;
         padding-block-start: 5rem;
       }
-
       footer > div {
         align-items: center;
         display: flex;
         justify-content: center;
       }
-
-      footer > div:first-child {
-        display: flex;
-        font-size: 1.5rem;
-        gap: 1.25rem;
-      }
-
       footer > div:last-child {
-        align-items: center;
-        display: flex;
         gap: 0 0.25rem;
         flex-wrap: wrap-reverse;
-        justify-content: center;
         text-align: center;
       }
-
       h1,
       h2,
       h3,
       p {
         margin: 0;
       }
-
       h1,
-      h2 {
+      h2,
+      h3 {
         letter-spacing: 1px;
         text-wrap: balance;
       }
-
-      h2,
-      h3 {
-        font-weight: inherit;
-      }
-
       h1 {
         font-size: clamp(1.5rem, 6.25vmin, 2rem);
       }
-
       h2 {
         font-size: clamp(1.375rem, 5vmin, 1.75rem);
       }
-
       h3 {
         font-size: clamp(1.25rem, 4vmin, 1.5rem);
       }
-
-      ol,
-      ul {
-        list-style: none;
-        padding: 0;
+      p {
+        text-wrap: pretty;
       }
-
-      a,
-      button {
-        align-items: center;
-        color: var(--blue);
-        display: inline-flex;
-        justify-content: center;
-        min-height: 2rem;
-        min-width: 2rem;
-      }
-
-      button {
-        border: none;
-        background: inherit;
-        cursor: pointer;
-        font-size: inherit;
-        padding: 0;
-      }
-
       .instructions h3 {
         margin-block: 1.25rem 0.5rem;
       }
-
       @media not all and (min-width: 400px) {
         html {
           font-size: 14px;
         }
       }
-
       @media (min-width: 800px) and (min-height: 800px) {
         html {
           font-size: 18px;

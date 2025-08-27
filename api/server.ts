@@ -1,6 +1,6 @@
 import compression from "compression"
 import cors from "cors"
-import dotenv from "dotenv"
+import { config } from "dotenv"
 import express from "express"
 import helmet from "helmet"
 import { createServer } from "http"
@@ -8,7 +8,7 @@ import { maxRequests, packageVersion } from "./middleware"
 import { searchRoute } from "./search"
 import { connectWS } from "./ws"
 
-dotenv.config()
+config()
 
 let app = express()
 
