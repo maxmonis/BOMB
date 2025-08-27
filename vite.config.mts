@@ -5,7 +5,8 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      "/api": { changeOrigin: true, target: "http://localhost:8080" }
+      "/api": { changeOrigin: true, target: "http://localhost:8080" },
+      "/ws": { changeOrigin: true, target: "ws://localhost:8080", ws: true }
     },
     watch: { ignored: ["api/**"] }
   }
