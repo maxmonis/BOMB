@@ -5,6 +5,7 @@ import express from "express"
 import helmet from "helmet"
 import { createServer } from "http"
 import { maxRequests, packageVersion } from "./middleware"
+import { searchRoute } from "./search"
 import { connectWS } from "./ws"
 
 dotenv.config()
@@ -27,6 +28,8 @@ app.use(
   express.urlencoded({ extended: true }),
   compression()
 )
+
+app.use("/api/search/", searchRoute)
 
 if (process.env.NODE_ENV == "production") {
   app.use(express.static("./.build/app"))
