@@ -10,7 +10,7 @@ export async function decrypt(jwt: string) {
 
 export function encrypt(
   payload: JWTPayload,
-  expiration: Parameters<ProduceJWT["setExpirationTime"]>[0]
+  expiration: Parameters<ProduceJWT["setExpirationTime"]>[0] = "14d"
 ) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })

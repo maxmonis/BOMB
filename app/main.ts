@@ -11,7 +11,7 @@ import {
   pendingState,
   waitingRoom
 } from "./elements"
-import { initUI, showToast } from "./ui"
+import { initUI } from "./ui"
 
 if (location.pathname != "/") location.replace(location.origin)
 
@@ -28,6 +28,46 @@ function connectToGame(token: string) {
     ws.close()
     connectToLobby()
   })
+  ws.onMessage(data => {
+    console.log(data)
+    if (data.key == "pending_game") {
+      lobbyContainer.remove()
+      pageTitle.textContent = "Pending Game"
+      pageTitle.after(waitingRoom)
+      admittedPlayerList.innerHTML = ""
+      admittedPlayerList.append(
+        ...data.game.admitted.map(p => {
+          let li = document.createElement("li")
+          li.textContent = p.name
+          return li
+        })
+      )
+    } else if (data.key == "join_requested") {
+      let li = document.createElement("li")
+      let text = document.createElement("div")
+      let name = document.createElement("p")
+      name.textContent = data.name
+      let message = document.createElement("p")
+      message.textContent = data.message
+      text.append(name, message)
+      let buttons = document.createElement("div")
+      let rejectButton = document.createElement("button")
+      rejectButton.textContent = "Reject"
+      rejectButton.addEventListener("click", () => {
+        ws.send({ key: "deny", userId: data.userId })
+        li.remove()
+      })
+      let admitButton = document.createElement("button")
+      admitButton.textContent = "Admit"
+      admitButton.addEventListener("click", () => {
+        ws.send({ key: "accept", name: data.name, userId: data.userId })
+        li.remove()
+      })
+      buttons.append(rejectButton, admitButton)
+      li.append(text, buttons)
+      pendingPlayerList.append(li)
+    }
+  })
 }
 
 function connectToLobby() {
@@ -38,7 +78,7 @@ function connectToLobby() {
     ws.close()
   })
   ws.onMessage(data => {
-    if (data.key == "list") {
+    if (data.key == "game_list") {
       availableGamesList.innerHTML = ""
       if (data.availableGames.length == 0) {
         availableGamesList.innerHTML = "<p>No available games</p>"
@@ -53,58 +93,24 @@ function connectToLobby() {
             lobbyContainer.remove()
             pageTitle.textContent = "Request to Join Game"
             pageTitle.after(joinRequestForm)
-            pendingGameId = game[0]!.id
+            pendingGameId = game.id
           })
-          li.append(`${game[0]!.name}'s Game`, button)
+          li.append(`${game.name}'s Game`, button)
           return li
         })
       )
-    } else if (data.key == "game_update") {
-      lobbyContainer.remove()
-      pageTitle.textContent = "Waiting Room"
-      pageTitle.after(waitingRoom)
-      admittedPlayerList.innerHTML = ""
-      admittedPlayerList.append(
-        ...data.players.map(player => {
-          let li = document.createElement("li")
-          li.textContent = player.name
-          return li
-        })
-      )
-    } else if (data.key == "accept") {
+    } else {
       localToken.set(data.token)
       connectToGame(data.token)
-    } else if (data.key == "deny") {
-      pendingGameId = ""
-      pendingState.remove()
-      pageTitle.textContent = "Lobby"
-      pageTitle.after(lobbyContainer)
-      showToast("You have been denied entry 😬")
-    } else if (data.key == "request") {
-      let li = document.createElement("li")
-      let rejectButton = document.createElement("button")
-      rejectButton.textContent = "Reject"
-      rejectButton.addEventListener("click", () => {
-        ws.send({ key: "deny", userId: data.userId })
-        li.remove()
-      })
-      let admitButton = document.createElement("button")
-      admitButton.textContent = "Admit"
-      admitButton.addEventListener("click", () => {
-        ws.send({ key: "accept", name: data.name, userId: data.userId })
-        li.remove()
-      })
-      li.append(data.name, rejectButton, admitButton)
-      pendingPlayerList.append(li)
     }
   })
   lobbyEmitter.listen(data => {
-    if (data.key == "create") ws.send(data)
-    else if (data.key == "request") {
+    if (data.key == "create_game") ws.send(data)
+    else if (data.key == "request_to_join") {
       if (!pendingGameId) return
       ws.send({
         ...data,
-        creatorId: pendingGameId
+        gameId: pendingGameId
       })
       pageTitle.textContent = "Awaiting Response..."
       joinRequestForm.remove()

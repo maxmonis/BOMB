@@ -26,13 +26,23 @@ export interface Page {
 }
 
 export type GameRequest =
+  | { key: "accept"; name: string; userId: string }
   | { key: "challenge" | "give_up" | "start" }
+  | { key: "deny"; userId: string }
   | { key: "play"; value: Page }
 
-export type GameResponse = Game
+export type GameResponse =
+  | { key: "game_update"; game: Game }
+  | { key: "join_requested"; message: string; name: string; userId: string }
+  | {
+      key: "pending_game"
+      game: {
+        admitted: Array<{ id: string; name: string }>
+        requested: Array<{ id: string; name: string }>
+      }
+    }
 
 export interface Game {
-  creatorId: string
   currentPlayer: User
   currentRound: Array<Page>
   messages: Array<ChatMessage>
@@ -44,20 +54,13 @@ export interface Game {
 }
 
 export type LobbyRequest =
-  | { key: "accept"; name: string; userId: string }
-  | { key: "create"; name: string }
-  | { key: "deny"; userId: string }
-  | { key: "request"; creatorId: string; message: string; name: string }
+  | { key: "create_game"; name: string }
+  | { key: "request_to_join"; gameId: string; message: string; name: string }
 
 export type LobbyResponse =
-  | { key: "accept"; token: string }
-  | { key: "deny" }
+  | { key: "game_created"; token: string }
   | {
-      key: "game_update"
-      players: Array<Omit<Game["players"][number], "letters">>
+      key: "game_list"
+      availableGames: Array<Omit<Game["players"][number], "letters">>
     }
-  | {
-      key: "list"
-      availableGames: Array<Array<Omit<Game["players"][number], "letters">>>
-    }
-  | { key: "request"; message: string; name: string; userId: string }
+  | { key: "join_request_pending"; token: string }

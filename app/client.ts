@@ -29,8 +29,8 @@ class Emitter<
   K extends "lobby",
   T extends K extends "lobby"
     ?
-        | { key: "create"; name: string }
-        | { key: "request"; message: string; name: string }
+        | { key: "create_game"; name: string }
+        | { key: "request_to_join"; message: string; name: string }
     : never
 > {
   private readonly key: `CustomEvent:${K}`

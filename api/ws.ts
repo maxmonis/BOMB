@@ -1,18 +1,23 @@
 import type { IncomingMessage } from "http"
 import type { Duplex } from "stream"
 import { WebSocket, WebSocketServer } from "ws"
-import { Game, LobbyRequest, LobbyResponse } from "../lib/types"
+import {
+  GameRequest,
+  GameResponse,
+  LobbyRequest,
+  LobbyResponse
+} from "../lib/types"
 import { hasChars } from "../lib/utils"
-import { decrypt } from "./jose"
+import { decrypt, encrypt } from "./jose"
 
 let wss = new WebSocketServer({ noServer: true })
 
-let gameClients = new Set<GameClient>()
 let lobbyClients = new Set<LobbyClient>()
 
-let availableGames = new Map<
+let activeGames = new Map<string, Set<GameClient>>()
+let pendingGames = new Map<
   string,
-  Array<Omit<Game["players"][number], "letters">>
+  { admitted: Set<GameClient>; requested: Set<GameClient> }
 >()
 
 export async function connectWS(
@@ -33,15 +38,59 @@ export async function connectWS(
       })
       return
     }
-    let { gameId, userId } = await decrypt(token)
-    if (!hasChars(userId) || !hasChars(gameId)) throw "Invalid token"
+    let { gameId, name, userId } = await decrypt(token)
+    if (!hasChars(gameId) || !hasChars(name) || !hasChars(userId))
+      throw "Invalid token"
+    let activeGame = activeGames.get(gameId)
+    if (activeGame) {
+      let client = Array.from(activeGame).find(c => c.userId == userId)
+      if (!client) throw "Invalid token"
+      wss.emit("game", client, request)
+      return
+    }
+    if (!pendingGames.has(gameId)) {
+      if (gameId != userId) throw "Invalid token"
+      wss.handleUpgrade(request, socket, head, ws => {
+        let newClient: GameClient = Object.assign(ws, {
+          alive: true,
+          gameId,
+          name,
+          userId
+        })
+        pendingGames.set(gameId, {
+          admitted: new Set([newClient]),
+          requested: new Set()
+        })
+        for (let lobbyClient of lobbyClients)
+          sendResponse(lobbyClient, getGameList())
+        wss.emit("game", newClient, request)
+        return
+      })
+    }
+    let pendingGame = pendingGames.get(gameId)!
+    let admittedClient = Array.from(pendingGame.admitted).find(
+      c => c.userId == userId
+    )
+    if (admittedClient) {
+      wss.emit("game:pending", admittedClient, request)
+      return
+    }
+    let requestedClient = Array.from(pendingGame.requested).find(
+      c => c.userId == userId
+    )
+    if (requestedClient) {
+      wss.emit("game:pending", requestedClient, request)
+      return
+    }
     wss.handleUpgrade(request, socket, head, ws => {
-      let gameClient: GameClient = Object.assign(ws, {
+      let newClient: GameClient = Object.assign(ws, {
         alive: true,
         gameId,
+        name,
         userId
       })
-      wss.emit("game", gameClient, request)
+      pendingGame.requested.add(newClient)
+      wss.emit("game:pending", newClient, request)
     })
   } catch (error) {
     socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n")
@@ -49,115 +98,136 @@ export async function connectWS(
   }
 }
 
-wss.on("game", async (gameClient: GameClient) => {
-  gameClients.add(gameClient)
-  gameClient.on("close", () => {
-    gameClients.delete(gameClient)
-  })
-  gameClient.on("ping", () => {
-    gameClient.alive = true
+wss.on("game", async (ws: GameClient) => {
+  let game = activeGames.get(ws.gameId)!
+  console.log("game", game)
+  ws.on("close", () => {
+    lobbyClients.delete(ws)
   })
 })
 
-wss.on("lobby", async (lobbyClient: LobbyClient) => {
-  lobbyClients.add(lobbyClient)
+function getPendingGameRes({
+  admitted,
+  requested
+}: {
+  admitted: Set<GameClient>
+  requested: Set<GameClient>
+}) {
+  return {
+    key: "pending_game",
+    game: {
+      admitted: Array.from(admitted).map(c => {
+        return { id: c.userId, name: c.name }
+      }),
+      requested: Array.from(requested).map(c => {
+        return { id: c.userId, name: c.name }
+      })
+    }
+  } as const
+}
+
+wss.on("game:pending", async (ws: GameClient) => {
+  let pendingGame = pendingGames.get(ws.gameId)!
+  sendResponse(ws, getPendingGameRes(pendingGame))
+  ws.on("message", async rawData => {
+    let data: GameRequest = JSON.parse(rawData.toString())
+    if (data.key == "accept") {
+      let { userId } = data
+      let socket = Array.from(pendingGame.requested).find(
+        c => c.userId == userId
+      )
+      if (!socket) return
+      pendingGame.requested.delete(socket)
+      pendingGame.admitted.add(socket)
+      let res = getPendingGameRes(pendingGame)
+      for (let client of pendingGame.admitted) sendResponse(client, res)
+    }
+  })
+  ws.on("close", () => {
+    lobbyClients.delete(ws)
+  })
+})
+
+wss.on("lobby", async (ws: LobbyClient) => {
+  lobbyClients.add(ws)
   let gameList = getGameList()
-  lobbyClient.send(JSON.stringify(gameList))
-  lobbyClient.on("close", () => {
-    lobbyClients.delete(lobbyClient)
-    if (lobbyClient.gameId && availableGames.has(lobbyClient.gameId)) {
-      let players = availableGames
-        .get(lobbyClient.gameId)!
-        .filter(p => p.id != lobbyClient.userId)
-      availableGames.set(lobbyClient.gameId, players)
-      let message: LobbyResponse = { key: "game_update", players }
-      for (let client of lobbyClients)
-        if (players.some(p => p.id == client.userId))
-          client.send(JSON.stringify(message))
-    }
-    if (availableGames.has(lobbyClient.userId)) {
-      availableGames.delete(lobbyClient.userId)
-      let gameList = getGameList()
-      for (let client of lobbyClients) client.send(JSON.stringify(gameList))
-    }
+  sendResponse(ws, gameList)
+  ws.on("close", () => {
+    lobbyClients.delete(ws)
   })
-  lobbyClient.on("message", async rawData => {
+  ws.on("message", async rawData => {
     let data: LobbyRequest = JSON.parse(rawData.toString())
-    if (data.key == "create") {
-      let players = [{ id: lobbyClient.userId, name: data.name }]
-      availableGames.set(lobbyClient.userId, players)
-      let message: LobbyResponse = { key: "game_update", players }
-      lobbyClient.send(JSON.stringify(message))
-      let gameList = getGameList()
-      for (let client of lobbyClients) client.send(JSON.stringify(gameList))
-    } else if (data.key == "request") {
-      let game = availableGames.get(data.creatorId)
-      if (!game) return
-      let message: LobbyResponse = {
-        key: "request",
-        message: data.message,
-        name: data.name,
-        userId: lobbyClient.userId
-      }
-      for (let client of lobbyClients)
-        if (client.userId == data.creatorId) {
-          client.send(JSON.stringify(message))
-          return
-        }
-    } else if (data.key == "accept") {
-      let players = availableGames.get(lobbyClient.userId)
-      if (!players) return
-      players.push({ id: data.userId, name: data.name })
-      for (let client of lobbyClients) {
-        if (client.userId == data.userId) client.gameId = lobbyClient.userId
-        if (players.some(p => p.id == client.userId)) {
-          let message: LobbyResponse = { key: "game_update", players }
-          client.send(JSON.stringify(message))
-        }
-      }
-    } else if (data.key == "deny") {
+    if (data.key == "create_game") {
+      let { userId } = ws
+      sendResponse(ws, {
+        key: "game_created",
+        token: await encrypt({ gameId: userId, name: data.name, userId })
+      })
+      ws.close()
+    } else if (data.key == "request_to_join") {
+      let { userId } = ws
+      let { gameId, message, name } = data
+      let game = pendingGames.get(gameId)
+      let creator = Array.from(game?.admitted ?? [])[0]
+      if (!game || !creator) return
+      sendResponse(creator, { key: "join_requested", message, name, userId })
+      sendResponse(ws, {
+        key: "join_request_pending",
+        token: await encrypt({ gameId, name, userId })
+      })
+      ws.close()
     }
   })
-  lobbyClient.on("ping", () => {
-    lobbyClient.alive = true
+  ws.on("ping", () => {
+    ws.alive = true
   })
 })
 
 function getGameList() {
-  let gameList: LobbyResponse = {
-    key: "list",
-    availableGames: Array.from(availableGames.values())
-  }
-  return gameList
+  return {
+    key: "game_list",
+    availableGames: Array.from(pendingGames.values()).map(list => {
+      let creator = Array.from(list.admitted)[0]!
+      return { name: creator.name, id: creator.userId }
+    })
+  } as const
+}
+
+function sendResponse<
+  C extends GameClient | LobbyClient,
+  T extends C extends GameClient ? GameResponse : LobbyResponse
+>(client: C, data: T) {
+  if (client.readyState == WebSocket.OPEN) client.send(JSON.stringify(data))
+  else console.warn("Tried to send a message on a closed socket")
 }
 
 setInterval(() => {
-  for (let client of gameClients) {
-    if (!client.alive) {
-      client.terminate()
-      gameClients.delete(client)
-      continue
-    }
-    client.alive = false
-    client.ping()
-  }
-  for (let client of lobbyClients) {
-    if (!client.alive) {
-      client.terminate()
-      lobbyClients.delete(client)
-      continue
-    }
-    client.alive = false
-    client.ping()
+  pingClients(lobbyClients)
+  for (let clients of activeGames.values()) pingClients(clients)
+  for (let game of pendingGames.values()) {
+    pingClients(game.admitted)
+    pingClients(game.requested)
   }
 }, 30_000)
 
+function pingClients(clients: Set<GameClient | LobbyClient>) {
+  for (let client of clients) {
+    if (!client.alive) {
+      client.terminate()
+      clients.delete(client)
+      continue
+    }
+    client.alive = false
+    client.ping()
+  }
+}
+
 interface GameClient extends Omit<LobbyClient, "gameId"> {
   gameId: string
+  name: string
 }
 
 interface LobbyClient extends WebSocket {
   alive: boolean
-  gameId?: string
   userId: string
 }
