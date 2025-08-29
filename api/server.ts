@@ -4,9 +4,10 @@ import { config } from "dotenv"
 import express from "express"
 import helmet from "helmet"
 import { createServer } from "http"
+import { WebSocketServer } from "ws"
 import { maxRequests, packageVersion } from "./middleware"
 import { searchRoute } from "./search"
-import { connectWS } from "./ws"
+import { onConnection } from "./ws"
 
 config()
 
@@ -45,4 +46,4 @@ server.listen(port, () => {
   console.log(`Server started on port ${port}`)
 })
 
-server.on("upgrade", connectWS)
+new WebSocketServer({ server }).on("connection", onConnection)

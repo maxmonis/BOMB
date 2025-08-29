@@ -1,10 +1,10 @@
 import { Router } from "express"
-import type { Page } from "../lib/types"
 import { hasChars } from "../lib/utils"
+import { authToken } from "./middleware"
 
 export let searchRoute = Router()
 
-searchRoute.get("/:category", async (req, res) => {
+searchRoute.get("/:category", authToken, async (req, res) => {
   let { category } = req.params
   let { q: term } = req.query
   try {
@@ -111,6 +111,12 @@ async function wikipediaRequest<T extends object>(
   if (!res.ok) throw value
   if ("error" in value) throw value.error.info
   return value
+}
+
+export interface Page {
+  pageid: string
+  title: string
+  year: number
 }
 
 interface WikipediaError {

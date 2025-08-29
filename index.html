@@ -84,10 +84,12 @@
         max-width: 100vw;
         min-height: 100vh;
         overflow-x: hidden;
-        padding: 1.25rem;
       }
       body.dark {
         color-scheme: dark;
+      }
+      header {
+        padding: 0.75rem 1.25rem 1.25rem;
       }
       header div {
         align-items: center;
@@ -98,13 +100,14 @@
       main {
         margin-inline: auto;
         max-width: 40rem;
+        padding-inline: 1.25rem;
       }
       footer {
         display: flex;
         flex-direction: column;
         gap: 1.25rem;
         margin-block: auto 0;
-        padding-block-start: 5rem;
+        padding: 5rem 1.25rem 0.75rem;
       }
       footer > div {
         align-items: center;
@@ -130,6 +133,11 @@
       }
       h1 {
         font-size: clamp(1.5rem, 6.25vmin, 2rem);
+        margin-block-end: 1.25rem;
+      }
+      h2,
+      h3 {
+        margin-block: 1.25rem 0.5rem;
       }
       h2 {
         font-size: clamp(1.375rem, 5vmin, 1.75rem);
@@ -139,9 +147,6 @@
       }
       p {
         text-wrap: pretty;
-      }
-      .instructions h3 {
-        margin-block: 1.25rem 0.5rem;
       }
       @media not all and (min-width: 400px) {
         html {

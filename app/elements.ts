@@ -77,9 +77,6 @@ joinRequestForm.addEventListener("submit", e => {
 joinRequestForm.append(nameLabel, messageLabel, nameFormButton)
 
 export let pendingState = document.createElement("div")
-pendingState.textContent =
-  "Your join request has been submitted and you will be " +
-  "notified when the host accepts or rejects your request."
 
 export let waitingRoom = document.createElement("div")
 let playerListContainer = document.createElement("div")
@@ -89,3 +86,9 @@ export let admittedPlayerList = document.createElement("ul")
 playerListContainer.append(playerListTitle, admittedPlayerList)
 export let pendingPlayerList = document.createElement("ul")
 waitingRoom.append(playerListContainer, pendingPlayerList)
+
+export let startGameButton = document.createElement("button")
+startGameButton.textContent = "Start Game"
+startGameButton.addEventListener("click", () => {
+  lobbyEmitter.post({ key: "start_game" })
+})
