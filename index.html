@@ -439,7 +439,7 @@
 
           ws.onerror = (error) => {
             console.error("WebSocket error:", error)
-            if (ws.readyState !== WebSocket.OPEN) {
+            if (ws.readyState != WebSocket.OPEN) {
               handleReconnection()
             }
           }
@@ -467,7 +467,7 @@
 
         socket.onmessage = (event) => {
           let data = JSON.parse(event.data)
-          if (data.type === "available_games") {
+          if (data.type == "available_games") {
             updateGamesList(data.games)
           }
         }
@@ -505,7 +505,7 @@
       }
 
       function getWebSocket() {
-        let wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
+        let wsProtocol = window.location.protocol == "https:" ? "wss:" : "ws:"
         let wsUrl = `${wsProtocol}//${window.location.host}/ws`
         return new WebSocket(wsUrl)
       }
@@ -560,7 +560,7 @@
             break
           case "error":
             // Stop reconnection attempts if game doesn't exist
-            if (message.message === "Game not found")
+            if (message.message == "Game not found")
               gameState.shouldReconnect = false
 
             // Clear game state and return to lobby
@@ -665,7 +665,7 @@
         gameState.usedItems.add(selection)
 
         // Set the opposite category for the next player
-        let nextCategory = category === "movie" ? "actor" : "movie"
+        let nextCategory = category == "movie" ? "actor" : "movie"
         document.querySelector(
           `input[name="category"][value="${nextCategory}"]`
         ).checked = true
@@ -741,7 +741,7 @@
           let resultsList = document.querySelector(".search-results")
           resultsList.innerHTML = ""
 
-          if (!results || results.length === 0) {
+          if (!results || results.length == 0) {
             resultsList.innerHTML = "<li>No results found</li>"
             return
           }
@@ -799,7 +799,7 @@
           countdownElement.textContent = gameState.timeLeft
           countdownElement.classList.toggle("red", gameState.timeLeft <= 10)
 
-          if (gameState.timeLeft === 0) {
+          if (gameState.timeLeft == 0) {
             stopLocalCountdown()
             // When time expires, notify server and wait for new game state
             ws.send(JSON.stringify({ type: "time_expired" }))
@@ -875,14 +875,14 @@
         }, "")
 
         // Update isCreator flag based on game state
-        gameState.isCreator = game.creatorId === gameState.playerName
+        gameState.isCreator = game.creatorId == gameState.playerName
 
         // Check if current user is in a pending state
         let isPending = Boolean(
           !gameState.isCreator &&
             game.joinRequests &&
             game.joinRequests[gameState.playerName] &&
-            !game.players.some((p) => p.name === gameState.playerName)
+            !game.players.some((p) => p.name == gameState.playerName)
         )
 
         // Hide players when pending
@@ -940,12 +940,12 @@
 
           // Handle timer and UI based on game state
           let isCurrentPlayer =
-            currentPlayerName === gameState.playerName &&
+            currentPlayerName == gameState.playerName &&
             !game.players[game.currentPlayer].isEliminated
           // Only show countdown for current player
           countdownElement.classList.toggle("hidden", !isCurrentPlayer)
           if (isCurrentPlayer) {
-            if (game.timeLeft === 30) {
+            if (game.timeLeft == 30) {
               // Fresh turn state
               countdownElement.textContent = "30"
               startLocalCountdown()
@@ -955,11 +955,11 @@
               let lastCategory = game.lastCategory
               document.querySelector(".instruction-text").textContent =
                 lastSelection
-                  ? lastCategory === "movie"
+                  ? lastCategory == "movie"
                     ? `Name an actor from ${lastSelection}`
                     : `Name a movie starring ${lastSelection}`
                   : "Name any movie or actor"
-            } else if (game.timeLeft === 0) {
+            } else if (game.timeLeft == 0) {
               // Time expired state
               stopLocalCountdown()
               countdownElement.textContent = "0"
@@ -991,7 +991,7 @@
             let lastCategory = game.lastCategory
             document.querySelector(".instruction-text").textContent =
               lastSelection
-                ? lastCategory === "movie"
+                ? lastCategory == "movie"
                   ? `Name an actor from ${lastSelection}`
                   : `Name a movie starring ${lastSelection}`
                 : "Name any movie or actor"
@@ -999,7 +999,7 @@
             // Update radio button based on previous selection
             if (game.lastCategory) {
               let nextCategory =
-                game.lastCategory === "movie" ? "actor" : "movie"
+                game.lastCategory == "movie" ? "actor" : "movie"
               document.querySelector(
                 `input[name="category"][value="${nextCategory}"]`
               ).checked = true
@@ -1020,13 +1020,13 @@
           if (game.challengeState) {
             let instructionText = document.querySelector(".instruction-text")
             challengeBtn.classList.add("hidden")
-            if (game.challengeState.challengedName === gameState.playerName) {
+            if (game.challengeState.challengedName == gameState.playerName) {
               // Show give up button only to the challenged player
               giveUpBtn.classList.remove("hidden")
               let lastSelection = game.lastSelection
               let lastCategory = game.lastCategory
               instructionText.innerHTML = `You've been challenged!<br /> Name ${
-                lastCategory === "movie" ? "an actor from" : "a movie starring"
+                lastCategory == "movie" ? "an actor from" : "a movie starring"
               } ${lastSelection}`
               document.querySelector(".search-form").classList.remove("hidden")
             } else {
@@ -1038,7 +1038,7 @@
             // Only show challenge button if there's a last selection and it's the current player's turn
             challengeBtn.classList.toggle(
               "hidden",
-              currentPlayerName !== gameState.playerName ||
+              currentPlayerName != gameState.playerName ||
                 !game.lastSelection ||
                 !game.roundStarted
             )
@@ -1063,7 +1063,7 @@
               html += `<div class="selection-round current">Current Round: `
               html += game.selectionHistory
                 .map((selection, idx) => {
-                  let type = idx % 2 === 0 ? "movie" : "actor"
+                  let type = idx % 2 == 0 ? "movie" : "actor"
                   return `<span class="selected-${type}">${selection}</span>`
                 })
                 .join(" → ")
@@ -1078,7 +1078,7 @@
                 }: `
                 html += round
                   .map((selection, idx) => {
-                    let type = idx % 2 === 0 ? "movie" : "actor"
+                    let type = idx % 2 == 0 ? "movie" : "actor"
                     return `<span class="${type}-selection">${selection}</span>`
                   })
                   .join(" → ")
@@ -1116,7 +1116,7 @@
             requestsDiv.innerHTML = ""
 
             // Make sure joinRequests exists and is an object
-            if (game.joinRequests && typeof game.joinRequests === "object") {
+            if (game.joinRequests && typeof game.joinRequests == "object") {
               let requests = Object.entries(game.joinRequests)
               document
                 .querySelector(".no-pending-players")

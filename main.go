@@ -799,9 +799,19 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	client := &http.Client{}
 	encodedQuery := url.QueryEscape(query)
 	searchUrl := fmt.Sprintf("https://en.wikipedia.org/w/api.php?action=query&format=json&list=search&origin=*&srsearch=%s", encodedQuery)
-	resp, err := http.Get(searchUrl)
+
+	req, err := http.NewRequest("GET", searchUrl, nil)
+	if err != nil {
+		log.Printf("Failed to create request: %v\n", err)
+		http.Error(w, "Failed to create request", http.StatusInternalServerError)
+		return
+	}
+	req.Header.Set("User-Agent", "BOMB-Game/1.0 (https://github.com/maxmonis/BOMB; mmonis77@gmail.com)")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("Failed to fetch data from Wikimedia API: %v\n", err)
 		http.Error(w, "Failed to fetch data from Wikimedia API", http.StatusInternalServerError)
@@ -848,7 +858,16 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch revisions for the titles
 	revisionsURL := fmt.Sprintf("https://en.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&titles=%s&format=json", url.QueryEscape(strings.Join(titles, "|")))
-	revisionsResp, err := http.Get(revisionsURL)
+
+	revisionsReq, err := http.NewRequest("GET", revisionsURL, nil)
+	if err != nil {
+		log.Printf("Failed to create revisions request: %v\n", err)
+		http.Error(w, "Failed to create revisions request", http.StatusInternalServerError)
+		return
+	}
+	revisionsReq.Header.Set("User-Agent", "BOMB-Game/1.0 (https://github.com/maxmonis/BOMB; mmonis77@gmail.com)")
+
+	revisionsResp, err := client.Do(revisionsReq)
 	if err != nil {
 		log.Printf("Failed to fetch revisions from Wikimedia API: %v\n", err)
 		http.Error(w, "Failed to fetch revisions from Wikimedia API", http.StatusInternalServerError)
