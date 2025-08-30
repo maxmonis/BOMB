@@ -98,6 +98,8 @@ export async function onConnection(
       }
       delete acceptedPlayer.message
       delete acceptedPlayer.pending
+      if (acceptedPlayer.socket)
+        sendResponse(acceptedPlayer.socket, { key: "join_request_accepted" })
       sendGameState(game)
     }
 
@@ -230,5 +232,6 @@ export type SocketResponse =
   | { key: "error"; message: string }
   | { key: "game_state"; game: GameResponse }
   | { key: "invalid_token" }
+  | { key: "join_request_accepted" }
   | { key: "join_request_denied" }
   | { key: "token"; token: string }

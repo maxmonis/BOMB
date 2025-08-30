@@ -137,6 +137,9 @@ function init() {
       )
     }
 
+    // -------------------- Join Request Accepted --------------------
+    else if (res.key == "join_request_accepted")
+      showToast("You've been admitted 😁")
     // -------------------- Join Request Denied --------------------
     else if (res.key == "join_request_denied") {
       waitingRoom.remove()
