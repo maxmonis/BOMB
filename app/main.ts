@@ -1,7 +1,7 @@
 import type { SocketRequest, SocketResponse } from "../api/ws"
 import { hasChars } from "../lib/utils"
 import "../style/global.css"
-import { lobbyEmitter, localToken } from "./client"
+import { gameEmitter, localToken } from "./client"
 import {
   admittedPlayerList,
   availableGamesList,
@@ -19,9 +19,9 @@ import { initUI, showToast } from "./ui"
 if (location.pathname != "/") location.replace(location.origin)
 
 initUI()
-initSocket()
+init()
 
-function initSocket() {
+function init() {
   let token = localToken.get()
   let userId = getUserIdFromToken(token)
 
@@ -37,7 +37,7 @@ function initSocket() {
   ws.onerror = () => {
     localToken.remove()
     ws.close()
-    initSocket()
+    init()
   }
 
   ws.onmessage = event => {
@@ -45,15 +45,13 @@ function initSocket() {
 
     // -------------------- Token --------------------
     if (res.key == "token") {
-      userId = getUserIdFromToken(res.token)
       localToken.set(res.token)
       ws.close()
-      initSocket()
+      init()
     } else if (res.key == "invalid_token") {
-      userId = null
       localToken.remove()
       ws.close()
-      initSocket()
+      init()
     }
 
     // -------------------- Game State --------------------
@@ -146,16 +144,16 @@ function initSocket() {
       showToast("Your join request was denied 😔")
       localToken.remove()
       ws.close()
-      initSocket()
+      init()
     }
 
     // -------------------- Error --------------------
     else if (res.key == "error") showToast(`Error: ${res.message}`)
   }
 
-  lobbyEmitter.listen(data => {
+  gameEmitter.listen(data => {
     if (data.key == "create_game") sendRequest(ws, data)
-    if (data.key == "start_game") sendRequest(ws, data)
+    else if (data.key == "start_game") sendRequest(ws, data)
     else if (data.key == "request_to_join") {
       if (!pendingGameId) return
       sendRequest(ws, { ...data, gameId: pendingGameId })

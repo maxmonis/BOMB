@@ -1,5 +1,5 @@
 import { hasChars } from "../lib/utils"
-import { lobbyEmitter } from "./client"
+import { gameEmitter } from "./client"
 
 export let footer = document.querySelector("footer")!
 export let header = document.querySelector("header")!
@@ -29,7 +29,7 @@ createGameForm.addEventListener("submit", e => {
     createGameInput.focus()
     return
   }
-  lobbyEmitter.post({ key: "create_game", name })
+  gameEmitter.post({ key: "create_game", name })
 })
 
 let availableGamesTitle = document.createElement("h2")
@@ -68,7 +68,7 @@ joinRequestForm.addEventListener("submit", e => {
   }
   nameInput.value = ""
   messageTextarea.value = ""
-  lobbyEmitter.post({
+  gameEmitter.post({
     key: "request_to_join",
     message,
     name
@@ -90,5 +90,5 @@ waitingRoom.append(playerListContainer, pendingPlayerList)
 export let startGameButton = document.createElement("button")
 startGameButton.textContent = "Start Game"
 startGameButton.addEventListener("click", () => {
-  lobbyEmitter.post({ key: "start_game" })
+  gameEmitter.post({ key: "start_game" })
 })

@@ -19,8 +19,8 @@ class Channel<
 export let themeChannel = new Channel("theme")
 
 class Emitter<
-  K extends "lobby",
-  T extends K extends "lobby"
+  K extends "game",
+  T extends K extends "game"
     ?
         | { key: "create_game"; name: string }
         | { key: "request_to_join"; message: string; name: string }
@@ -42,7 +42,7 @@ class Emitter<
   }
 }
 
-export let lobbyEmitter = new Emitter("lobby")
+export let gameEmitter = new Emitter("game")
 
 class LocalStorage<
   K extends "audio" | "dark" | "token",
