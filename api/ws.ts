@@ -149,7 +149,7 @@ export async function onConnection(
     }
   })
 
-  ws.on("ping", () => {
+  ws.on("pong", () => {
     ws.alive = true
   })
 }
@@ -252,14 +252,14 @@ interface Game {
 
 type GameResponse = ActiveGameResponse | PendingGameResponse
 
-export interface ActiveGameResponse {
+interface ActiveGameResponse {
   category: "actor" | "movie"
   players: Array<ActiveGamePlayer>
   rounds: Array<Array<Page>>
   started: true
 }
 
-interface PendingGameResponse extends Omit<Game, "players" | "started"> {
+interface PendingGameResponse {
   players: Array<PendingGamePlayer>
   started: false
 }

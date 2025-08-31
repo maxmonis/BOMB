@@ -8,10 +8,10 @@ import {
   availableGamesList,
   currentRoundText,
   gameStateContainer,
+  gameSubtitle,
   joinRequestForm,
   lobbyContainer,
   main,
-  pageSubtitle,
   pageTitle,
   pendingPlayerList,
   pendingText,
@@ -104,7 +104,7 @@ function init() {
           })
         )
 
-        if (!main.contains(pageSubtitle)) scoreContainer.after(pageSubtitle)
+        if (!main.contains(gameSubtitle)) scoreContainer.after(gameSubtitle)
 
         let player = res.game.players.find(p => p.id == userId)!
         let status = player.status
@@ -114,10 +114,10 @@ function init() {
         // -------------------- Your Turn --------------------
         if (status == "active") {
           pageTitle.textContent = "It's your turn!"
-          pageSubtitle.textContent = `Name ${category == "actor" ? "an actor" : "a movie"}`
+          gameSubtitle.textContent = `Name ${category == "actor" ? "an actor" : "a movie"}`
           let previousAnswer = currentRound.at(-1)
           if (previousAnswer)
-            pageSubtitle.textContent += ` ${category == "actor" ? "from" : "starring"} ${previousAnswer.title}`
+            gameSubtitle.textContent += ` ${category == "actor" ? "from" : "starring"} ${previousAnswer.title}`
           gameStateContainer.append(searchContainer)
 
           let searchInputTimeout: null | ReturnType<typeof setTimeout> = null
@@ -126,11 +126,9 @@ function init() {
             if (searchInputTimeout) clearTimeout(searchInputTimeout)
             searchInputTimeout = setTimeout(async () => {
               let query = searchInput.value.trim()
-              if (!hasChars(query, 3)) {
-                searchResults.innerHTML = ""
-                return
-              }
-              searchResults.innerHTML = spinner
+              searchResults.innerHTML = ""
+              if (!hasChars(query, 3)) return
+              searchResults.append(spinner)
               let results = await callAPI<Array<Page>>(
                 `search/${category}?q=${query}`
               )
@@ -163,7 +161,7 @@ function init() {
 
         // -------------------- Someone Else's Turn --------------------
         else if (status == "idle") {
-          pageSubtitle.textContent = `${res.game.players.find(p => p.status == "active")!.name} is thinking...`
+          gameSubtitle.textContent = `${res.game.players.find(p => p.status == "active")!.name} is thinking...`
           searchInput.value = ""
           searchLabel.innerHTML = ""
           searchResults.innerHTML = ""
@@ -172,7 +170,7 @@ function init() {
 
         if (res.game.rounds?.length) {
           currentRoundText.innerHTML = currentRound.reduce((acc, p) => {
-            return acc ? `${acc} --> ${p.title}` : p.title
+            return acc ? `${acc} &rarr; ${p.title}` : p.title
           }, "")
         }
         gameStateContainer.append(roundsContainer)

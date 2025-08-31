@@ -46,4 +46,5 @@ server.listen(port, () => {
   console.log(`Server started on port ${port}`)
 })
 
-new WebSocketServer({ server }).on("connection", onConnection)
+let wss = new WebSocketServer({ server })
+wss.on("connection", onConnection)

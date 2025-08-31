@@ -8,7 +8,7 @@ searchRoute.get("/:category", authToken, async (req, res) => {
   let { category } = req.params
   let { q: term } = req.query
   try {
-    if (!hasChars(term)) res.status(400).json("Invalid payload")
+    if (!hasChars(term)) res.status(400).json("Invalid request")
     else if (category == "actor") res.json(await searchActors(term))
     else if (category == "movie") res.json(await searchMovies(term))
     else res.status(400).json("Invalid request")
@@ -63,7 +63,7 @@ async function searchActors(term: string) {
   }
   return results.flatMap<Page>(({ pageid, title }) => {
     let year = birthYears[pageid]
-    return year ? { pageid, title, year } : []
+    return year ? { pageid, title: title.split(" (")[0]!, year } : []
   })
 }
 
@@ -82,7 +82,7 @@ async function searchMovies(term: string) {
   }
   return results.flatMap<Page>(({ pageid, title }) => {
     let year = releaseYears[pageid]
-    return year ? { pageid, title, year } : []
+    return year ? { pageid, title: title.split(" (")[0]!, year } : []
   })
 }
 

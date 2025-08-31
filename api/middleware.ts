@@ -18,7 +18,7 @@ export async function authToken(
     let { gameId, userId } = await decrypt(token)
     if (!hasChars(gameId) || !hasChars(userId)) throw "Invalid token"
     let game = games.get(gameId)
-    if (!game?.started || !game.players.some(p => p.id == userId && p.socket))
+    if (!game?.started || !game.players.some(p => p.id == userId))
       throw "Invalid token"
     next()
   } catch (error) {

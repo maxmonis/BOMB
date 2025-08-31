@@ -8,27 +8,31 @@ export let main = document.querySelector("main")!
 export let pageTitle = document.querySelector("h1")!
 
 export let lobbyContainer = document.createElement("div")
-export let pageSubtitle = document.createElement("h2")
 
-export let spinner = `
-<svg
-  class="spinner"
-  height="40"
-  preserveAspectRatio="xMidYMid"
-  viewBox="0 0 100 100"
-  width="40"
->
-  <rect fill="none" height="100" width="100" x="0" y="0"></rect>
-  <circle
-    cx="50"
-    cy="50"
-    fill="none"
-    r="40"
-    stroke="currentColor"
-    stroke-linecap="round"
-    stroke-width="12"
-  ></circle>
-</svg>`
+export let spinner = document.createElementNS(
+  "http://www.w3.org/2000/svg",
+  "svg"
+)
+spinner.classList.add("spinner")
+spinner.setAttribute("height", "40")
+spinner.setAttribute("preserveAspectRatio", "xMidYMid")
+spinner.setAttribute("viewBox", "0 0 100 100")
+spinner.setAttribute("width", "40")
+let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect")
+rect.setAttribute("fill", "none")
+rect.setAttribute("height", "100")
+rect.setAttribute("width", "100")
+rect.setAttribute("x", "0")
+rect.setAttribute("y", "0")
+let circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
+circle.setAttribute("cx", "50")
+circle.setAttribute("cy", "50")
+circle.setAttribute("fill", "none")
+circle.setAttribute("r", "40")
+circle.setAttribute("stroke", "currentColor")
+circle.setAttribute("stroke-linecap", "round")
+circle.setAttribute("stroke-width", "12")
+spinner.append(rect, circle)
 
 let createGameTitle = document.createElement("h2")
 createGameTitle.textContent = "Create New Game"
@@ -100,11 +104,12 @@ joinRequestForm.append(nameLabel, messageLabel, nameFormButton)
 
 export let pendingText = document.createElement("p")
 
+export let gameSubtitle = document.createElement("h2")
 export let waitingRoom = document.createElement("div")
 let playerListContainer = document.createElement("div")
-pageSubtitle.textContent = "Current Players"
+gameSubtitle.textContent = "Current Players"
 export let admittedPlayerList = document.createElement("ul")
-playerListContainer.append(pageSubtitle, admittedPlayerList)
+playerListContainer.append(gameSubtitle, admittedPlayerList)
 export let pendingPlayerList = document.createElement("ul")
 waitingRoom.append(playerListContainer, pendingPlayerList)
 
@@ -122,6 +127,7 @@ export let searchContainer = document.createElement("div")
 searchContainer.classList.add("search-container")
 export let searchLabel = document.createElement("label")
 export let searchInput = document.createElement("input")
+searchInput.autofocus = true
 export let searchResults = document.createElement("ul")
 searchContainer.append(searchLabel, searchResults)
 export let roundsContainer = document.createElement("ol")
