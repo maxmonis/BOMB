@@ -2,6 +2,7 @@ import type { IncomingMessage } from "http"
 import { WebSocket } from "ws"
 import { hasChars } from "../lib/utils"
 import { decrypt, encrypt } from "./jose"
+import { Redis } from "./redis"
 
 let lobby = new Set<Socket>()
 export let games = new Map<string, Game>()
@@ -25,9 +26,12 @@ export async function onConnection(
 
   let player = game && userId ? game.players.find(p => p.id == userId) : null
 
-  if (game && player) {
+  if (gameId && game && player) {
     player.socket = ws
-    sendGameState(game)
+    let gameData = game.started
+      ? await new Redis(`game:${gameId}`).get()
+      : undefined
+    sendResponse(ws, getGameState(game, gameData))
   } else {
     if (game) sendResponse(ws, { key: "invalid_token" })
     userId = crypto.randomUUID()
@@ -134,25 +138,51 @@ function getAvailableGames() {
     games: Array.from(games.entries()).flatMap(([id, { players, started }]) => {
       if (started) return []
       let creator = players[0]
-      if (!creator?.socket) {
-        games.delete(id)
-        return []
-      }
-      return { creatorName: creator.name, id }
+      return creator ? { creatorName: creator.name, id } : []
     })
   } as const
 }
 
-function sendGameState({ players, ...game }: Game) {
-  let playerList = players.map<GameResponsePlayer>(({ socket, ...player }) => {
-    return { connected: Boolean(socket?.alive), ...player }
-  })
-  for (let player of players)
-    if (player.socket)
-      sendResponse(player.socket, {
-        key: "game_state",
-        game: { ...game, players: playerList }
-      })
+function getGameState({ players, started }: Game, gameData: GameData = {}) {
+  if (!started)
+    return {
+      key: "game_state",
+      game: {
+        players: players.map(({ socket, ...player }) => {
+          return { connected: Boolean(socket), ...player }
+        }),
+        started: false
+      }
+    } as const
+
+  let { challenged, currentPlayerIndex = 0, letters, ...game } = gameData
+
+  return {
+    key: "game_state",
+    game: {
+      ...game,
+      players: players.map(({ socket, ...player }, i) => {
+        return {
+          connected: Boolean(socket),
+          letters: letters?.[player.id] ?? 0,
+          status:
+            i == currentPlayerIndex
+              ? challenged
+                ? "challenged"
+                : "active"
+              : "idle",
+          ...player
+        } as const
+      }),
+      started: true
+    }
+  } as const
+}
+
+function sendGameState(game: Game, gameData?: GameData) {
+  let res = getGameState(game, gameData)
+  for (let player of game.players)
+    if (player.socket) sendResponse(player.socket, res)
 }
 
 function sendResponse(ws: Socket, res: SocketResponse) {
@@ -168,6 +198,7 @@ setInterval(() => {
       socket.terminate()
       lobby.delete(socket)
     }
+
   for (let game of games.values())
     for (let player of game.players)
       if (player.socket)
@@ -185,12 +216,33 @@ interface Game {
   started: boolean
 }
 
-interface GameResponse extends Omit<Game, "players"> {
+export interface GameData {
+  challenged?: boolean
+  currentPlayerIndex?: number
+  currentRound?: Array<string>
+  lastCategory?: "actor" | "movie"
+  letters?: Record<string, number>
+  previousRounds?: Array<Array<string>>
+}
+
+type GameResponse = ActiveGameResponse | PendingGameResponse
+
+interface ActiveGameResponse
+  extends Omit<Game, "players" | "started">,
+    Omit<GameData, "challenged" | "currentPlayerIndex" | "letters"> {
   players: Array<GameResponsePlayer>
+  started: true
+}
+
+interface PendingGameResponse extends Omit<Game, "players" | "started"> {
+  players: Array<Omit<GameResponsePlayer, "letters" | "status">>
+  started: false
 }
 
 interface GameResponsePlayer extends Omit<Player, "socket"> {
   connected: boolean
+  letters: number
+  status: "active" | "challenged" | "idle"
 }
 
 interface Player {

@@ -1,3 +1,4 @@
 .build
 .env
+dump.rdb
 node_modules
