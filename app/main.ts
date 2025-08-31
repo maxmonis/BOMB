@@ -57,10 +57,14 @@ function init() {
     // -------------------- Game State --------------------
     else if (res.key == "game_state") {
       lobbyContainer.remove()
-      let isCreator = userId == res.game.players[0]?.id
+      let creator = res.game.players[0]!
+      let isCreator = userId == creator.id
       if (!res.game.started) {
-        pageTitle.textContent = "Pending Game"
-        pageTitle.after(waitingRoom)
+        pageTitle.textContent = isCreator
+          ? "Your Game"
+          : `${creator.name}'s Game`
+        if (!main.contains(waitingRoom)) pageTitle.after(waitingRoom)
+        pendingState.remove()
         if (res.game.players.some(p => p.id == userId && p.pending)) {
           pageTitle.textContent = "Awaiting Response..."
           pendingState.textContent =
@@ -126,13 +130,14 @@ function init() {
           let li = document.createElement("li")
           let button = document.createElement("button")
           button.textContent = "Request to Join"
+          let gameName = `${game.creatorName}'s Game`
           button.addEventListener("click", () => {
             lobbyContainer.remove()
-            pageTitle.textContent = "Request to Join Game"
+            pageTitle.textContent = `Request to Join ${gameName}`
             pageTitle.after(joinRequestForm)
             pendingGameId = game.id
           })
-          li.append(`${game.creatorName}'s Game`, button)
+          li.append(gameName, button)
           return li
         })
       )
@@ -143,6 +148,7 @@ function init() {
       showToast("You've been admitted 😁")
     // -------------------- Join Request Denied --------------------
     else if (res.key == "join_request_denied") {
+      pageTitle.textContent = "Lobby"
       waitingRoom.remove()
       pendingState.remove()
       showToast("Your join request was denied 😔")
