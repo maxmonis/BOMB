@@ -57,6 +57,7 @@ function init() {
     // -------------------- Game State --------------------
     else if (res.key == "game_state") {
       lobbyContainer.remove()
+      let isCreator = userId == res.game.players[0]?.id
       if (!res.game.started) {
         pageTitle.textContent = "Pending Game"
         pageTitle.after(waitingRoom)
@@ -66,7 +67,7 @@ function init() {
             "Your join request has been submitted and you will be " +
             "notified when the host accepts or rejects your request."
           waitingRoom.after(pendingState)
-        } else if (!res.game.isCreator) {
+        } else if (!isCreator) {
           pendingState.textContent = "Waiting for the host to start the game..."
           waitingRoom.after(pendingState)
         }
@@ -78,7 +79,7 @@ function init() {
           return li
         })
         admittedPlayerList.append(...admittedPlayers)
-        if (!res.game.isCreator) return
+        if (!isCreator) return
         let pendingPlayers = res.game.players.flatMap(p => {
           if (!p.pending) return []
           let li = document.createElement("li")

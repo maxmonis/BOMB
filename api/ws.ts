@@ -49,11 +49,7 @@ export async function onConnection(
     if (req.key == "create_game") {
       gameId = crypto.randomUUID()
       player = { id: userId, name: req.name, socket: ws }
-      game = {
-        creatorId: userId,
-        players: [player],
-        started: false
-      }
+      game = { players: [player], started: false }
       games.set(gameId, game)
       lobby.delete(ws)
       let token = await encrypt({ gameId, userId })
@@ -135,21 +131,19 @@ export async function onConnection(
 function getAvailableGames() {
   return {
     key: "available_games",
-    games: Array.from(games.entries()).flatMap(
-      ([id, { creatorId, players, started }]) => {
-        if (started) return []
-        let creator = players.find(p => p.id == creatorId)
-        if (!creator?.socket) {
-          games.delete(id)
-          return []
-        }
-        return { creatorName: creator.name, id }
+    games: Array.from(games.entries()).flatMap(([id, { players, started }]) => {
+      if (started) return []
+      let creator = players[0]
+      if (!creator?.socket) {
+        games.delete(id)
+        return []
       }
-    )
+      return { creatorName: creator.name, id }
+    })
   } as const
 }
 
-function sendGameState({ creatorId, players, ...game }: Game) {
+function sendGameState({ players, ...game }: Game) {
   let playerList = players.map<GameResponsePlayer>(({ socket, ...player }) => {
     return { connected: Boolean(socket?.alive), ...player }
   })
@@ -157,11 +151,7 @@ function sendGameState({ creatorId, players, ...game }: Game) {
     if (player.socket)
       sendResponse(player.socket, {
         key: "game_state",
-        game: {
-          ...game,
-          isCreator: player.id == creatorId,
-          players: playerList
-        }
+        game: { ...game, players: playerList }
       })
 }
 
@@ -191,13 +181,11 @@ setInterval(() => {
 }, 30_000)
 
 interface Game {
-  creatorId: string
   players: Array<Player>
   started: boolean
 }
 
-interface GameResponse extends Omit<Game, "creatorId" | "players"> {
-  isCreator: boolean
+interface GameResponse extends Omit<Game, "players"> {
   players: Array<GameResponsePlayer>
 }
 
