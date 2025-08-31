@@ -2,7 +2,6 @@ import type { IncomingMessage } from "http"
 import { WebSocket } from "ws"
 import { hasChars } from "../lib/utils"
 import { decrypt, encrypt } from "./jose"
-import { Redis } from "./redis"
 import { Page } from "./search"
 
 let lobby = new Set<Socket>()
@@ -27,15 +26,9 @@ export async function onConnection(
 
   let player = game && userId ? game.players.find(p => p.id == userId) : null
 
-  let gameData: GameData = {}
-
   if (gameId && game && player) {
     player.socket = ws
-    if (game.started) {
-      let cachedGameData = await new Redis(`game:${gameId}`).get()
-      gameData = cachedGameData ?? {}
-    }
-    sendResponse(ws, getGameState(game, gameData))
+    sendResponse(ws, getGameState(game))
   } else {
     if (game) sendResponse(ws, { key: "invalid_token" })
     userId = crypto.randomUUID()
@@ -127,38 +120,32 @@ export async function onConnection(
       }
       game.players = game.players.filter(p => !p.pending)
       game.started = true
-      gameData = {}
       sendGameState(game)
     }
 
     // -------------------- Play Move --------------------
     else if (req.key == "play_move") {
-      if (!game || !gameId) {
+      if (!game) {
         sendResponse(ws, { key: "error", message: "Game not found" })
         return
       }
-      let dataCache = new Redis(`game:${gameId}`)
-      let cachedGameData = await dataCache.get()
-      if (cachedGameData) gameData = cachedGameData
-      gameData.lastCategory =
-        gameData.lastCategory == "movie" ? "actor" : "movie"
-      if (!gameData.rounds) gameData.rounds = [[]]
-      gameData.rounds.at(-1)!.push(req.page)
-      let index = gameData.currentPlayerIndex ?? 0
+      game.lastCategory = game.lastCategory == "movie" ? "actor" : "movie"
+      if (!game.rounds) game.rounds = [[]]
+      game.rounds.at(-1)!.push(req.page)
+      let index = game.currentPlayerIndex ?? 0
       let nextIndex = (index + 1) % game.players.length
       let players = game.players.map(({ id, name }) => {
         return {
           id,
-          letters: gameData.letters?.[id] ?? 0,
+          letters: game?.letters?.[id] ?? 0,
           name
         }
       })
       while (players[nextIndex]!.letters > 3) {
         nextIndex = (nextIndex + 1) % game.players.length
       }
-      gameData.currentPlayerIndex = nextIndex
-      dataCache.set(gameData)
-      sendGameState(game, gameData)
+      game.currentPlayerIndex = nextIndex
+      sendGameState(game)
     }
   })
 
@@ -178,7 +165,15 @@ function getAvailableGames() {
   } as const
 }
 
-function getGameState({ players, started }: Game, gameData: GameData = {}) {
+function getGameState({
+  challenged,
+  currentPlayerIndex = 0,
+  lastCategory,
+  letters,
+  players,
+  rounds,
+  started
+}: Game) {
   if (!started)
     return {
       key: "game_state",
@@ -190,19 +185,9 @@ function getGameState({ players, started }: Game, gameData: GameData = {}) {
       }
     } as const
 
-  let {
-    challenged,
-    currentPlayerIndex = 0,
-    lastCategory,
-    letters,
-    rounds,
-    ...game
-  } = gameData
-
   return {
     key: "game_state",
     game: {
-      ...game,
       category: lastCategory == "movie" ? "actor" : "movie",
       players: players.map(({ socket, ...player }, i) => {
         return {
@@ -223,8 +208,8 @@ function getGameState({ players, started }: Game, gameData: GameData = {}) {
   } as const
 }
 
-function sendGameState(game: Game, gameData?: GameData) {
-  let res = getGameState(game, gameData)
+function sendGameState(game: Game) {
+  let res = getGameState(game)
   for (let player of game.players)
     if (player.socket) sendResponse(player.socket, res)
 }
@@ -256,45 +241,38 @@ setInterval(() => {
 }, 30_000)
 
 interface Game {
-  players: Array<Player>
-  started: boolean
-}
-
-export interface GameData {
   challenged?: boolean
   currentPlayerIndex?: number
   lastCategory?: "actor" | "movie"
   letters?: Record<string, number>
+  players: Array<Player>
   rounds?: Array<Array<Page>>
+  started: boolean
 }
 
 type GameResponse = ActiveGameResponse | PendingGameResponse
 
-export interface ActiveGameResponse
-  extends Omit<Game, "players" | "started">,
-    Omit<
-      GameData,
-      | "challenged"
-      | "currentPlayerIndex"
-      | "lastCategory"
-      | "letters"
-      | "rounds"
-    > {
+export interface ActiveGameResponse {
   category: "actor" | "movie"
-  players: Array<GameResponsePlayer>
+  players: Array<ActiveGamePlayer>
   rounds: Array<Array<Page>>
   started: true
 }
 
 interface PendingGameResponse extends Omit<Game, "players" | "started"> {
-  players: Array<Omit<GameResponsePlayer, "letters" | "status">>
+  players: Array<PendingGamePlayer>
   started: false
 }
 
-interface GameResponsePlayer extends Omit<Player, "socket"> {
+interface ActiveGamePlayer
+  extends Omit<Player, "message" | "pending" | "socket"> {
   connected: boolean
   letters: number
   status: "active" | "challenged" | "idle"
+}
+
+interface PendingGamePlayer extends Omit<Player, "socket"> {
+  connected: boolean
 }
 
 interface Player {

@@ -163,6 +163,7 @@ function init() {
 
         // -------------------- Someone Else's Turn --------------------
         else if (status == "idle") {
+          pageSubtitle.textContent = `${res.game.players.find(p => p.status == "active")!.name} is thinking...`
           searchInput.value = ""
           searchLabel.innerHTML = ""
           searchResults.innerHTML = ""

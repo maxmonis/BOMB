@@ -6,13 +6,10 @@ import helmet from "helmet"
 import { createServer } from "http"
 import { WebSocketServer } from "ws"
 import { maxRequests, packageVersion } from "./middleware"
-import { connectRedis } from "./redis"
 import { searchRoute } from "./search"
 import { onConnection } from "./ws"
 
 config()
-
-connectRedis()
 
 let app = express()
 
