@@ -73,10 +73,11 @@ joinRequestForm.addEventListener("submit", e => {
     message,
     name
   })
+  joinRequestForm.remove()
 })
 joinRequestForm.append(nameLabel, messageLabel, nameFormButton)
 
-export let pendingState = document.createElement("div")
+export let pendingText = document.createElement("p")
 
 export let waitingRoom = document.createElement("div")
 let playerListContainer = document.createElement("div")

@@ -10,7 +10,7 @@ import {
   main,
   pageTitle,
   pendingPlayerList,
-  pendingState,
+  pendingText,
   startGameButton,
   waitingRoom
 } from "./elements"
@@ -33,6 +33,8 @@ function init() {
   )
 
   let pendingGameId: string | null = null
+
+  pageTitle.textContent = "Lobby"
 
   ws.onerror = () => {
     localToken.remove()
@@ -57,24 +59,29 @@ function init() {
     // -------------------- Game State --------------------
     else if (res.key == "game_state") {
       lobbyContainer.remove()
+
       let creator = res.game.players[0]!
       let isCreator = userId == creator.id
+
+      pageTitle.textContent = isCreator ? "Your Game" : `${creator.name}'s Game`
+
+      // -------------------- Pending Game --------------------
       if (!res.game.started) {
-        pageTitle.textContent = isCreator
-          ? "Your Game"
-          : `${creator.name}'s Game`
         if (!main.contains(waitingRoom)) pageTitle.after(waitingRoom)
-        pendingState.remove()
+
+        pendingText.remove()
+
         if (res.game.players.some(p => p.id == userId && p.pending)) {
           pageTitle.textContent = "Awaiting Response..."
-          pendingState.textContent =
+          pendingText.textContent =
             "Your join request has been submitted and you will be " +
             "notified when the host accepts or rejects your request."
-          waitingRoom.after(pendingState)
+          waitingRoom.after(pendingText)
         } else if (!isCreator) {
-          pendingState.textContent = "Waiting for the host to start the game..."
-          waitingRoom.after(pendingState)
+          pendingText.textContent = "Waiting for the host to start the game..."
+          waitingRoom.after(pendingText)
         }
+
         admittedPlayerList.innerHTML = ""
         let admittedPlayers = res.game.players.flatMap(p => {
           if (p.pending) return []
@@ -83,16 +90,21 @@ function init() {
           return li
         })
         admittedPlayerList.append(...admittedPlayers)
+
         if (!isCreator) return
+
         let pendingPlayers = res.game.players.flatMap(p => {
           if (!p.pending) return []
+
           let li = document.createElement("li")
+
           let text = document.createElement("div")
           let name = document.createElement("p")
           name.textContent = p.name
-          let message = document.createElement("p")
+          let message = document.createElement("small")
           message.textContent = p.message ?? ""
           text.append(name, message)
+
           let buttons = document.createElement("div")
           let rejectButton = document.createElement("button")
           rejectButton.textContent = "Reject"
@@ -107,11 +119,15 @@ function init() {
             li.remove()
           })
           buttons.append(rejectButton, admitButton)
+
           li.append(text, buttons)
+
           return li
         })
+
         pendingPlayerList.innerHTML = ""
         if (pendingPlayers.length) pendingPlayerList.append(...pendingPlayers)
+
         if (admittedPlayers.length > 1 && !main.contains(startGameButton))
           pendingPlayerList.after(startGameButton)
       }
@@ -120,23 +136,29 @@ function init() {
     // -------------------- Available Games --------------------
     else if (res.key == "available_games") {
       if (!main.contains(lobbyContainer)) pageTitle.after(lobbyContainer)
+
       availableGamesList.innerHTML = ""
       if (res.games.length == 0) {
         availableGamesList.innerHTML = "<p>No available games</p>"
         return
       }
+
       availableGamesList.append(
         ...res.games.map(game => {
+          let gameName = `${game.creatorName}'s Game`
+
           let li = document.createElement("li")
+
           let button = document.createElement("button")
           button.textContent = "Request to Join"
-          let gameName = `${game.creatorName}'s Game`
+
           button.addEventListener("click", () => {
             lobbyContainer.remove()
             pageTitle.textContent = `Request to Join ${gameName}`
             pageTitle.after(joinRequestForm)
             pendingGameId = game.id
           })
+
           li.append(gameName, button)
           return li
         })
@@ -148,9 +170,8 @@ function init() {
       showToast("You've been admitted 😁")
     // -------------------- Join Request Denied --------------------
     else if (res.key == "join_request_denied") {
-      pageTitle.textContent = "Lobby"
       waitingRoom.remove()
-      pendingState.remove()
+      pendingText.remove()
       showToast("Your join request was denied 😔")
       localToken.remove()
       ws.close()
@@ -164,18 +185,17 @@ function init() {
   gameEmitter.listen(data => {
     if (data.key == "create_game") sendRequest(ws, data)
     else if (data.key == "start_game") sendRequest(ws, data)
-    else if (data.key == "request_to_join") {
-      if (!pendingGameId) return
-      sendRequest(ws, { ...data, gameId: pendingGameId })
-      joinRequestForm.remove()
-    }
+    else if (data.key == "request_to_join")
+      if (pendingGameId) sendRequest(ws, { ...data, gameId: pendingGameId })
   })
 }
 
 function getTokenPayload(value: unknown): unknown {
   if (!hasChars(value)) return null
+
   let [header, payload, signature] = value.split(".")
   if (!header || !payload || !hasChars(signature)) return null
+
   try {
     JSON.parse(atob(header))
     return JSON.parse(atob(payload))

@@ -33,11 +33,11 @@ function applyDark() {
   darkToggle.innerText = dark ? "🌛" : "🌞"
 }
 
-themeChannel.listen(data => {
-  if (data == "audio") {
+themeChannel.listen(key => {
+  if (key == "audio") {
     audio = localAudio.get()
     applyAudio()
-  } else if (data == "dark") {
+  } else if (key == "dark") {
     dark = localDark.get() ?? defaultDark
     applyDark()
   }
