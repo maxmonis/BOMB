@@ -18,12 +18,10 @@ searchRoute.get("/:category", authToken, async (req, res) => {
 })
 
 function extractYear(lines: Array<string>, regex: RegExp) {
-  return parseInt(
-    lines
-      .find(line => regex.test(line))
-      ?.split("=")[1]
-      ?.replace(/.*(\d{4}).*/, "$1") ?? ""
-  )
+  let line = lines.find(line => regex.test(line))
+  if (!line?.startsWith("|")) return null
+  let year = line.replace(/.*(\d{4}).*/, "$1")
+  return year ? parseInt(year) : null
 }
 
 function getDescription(lines: Array<string>) {
@@ -65,8 +63,7 @@ async function searchActors(term: string) {
   }
   return results.flatMap<Page>(({ pageid, title }) => {
     let year = birthYears[pageid]
-    if (!year) return []
-    return { pageid: pageid.toString(), title, year }
+    return year ? { pageid, title, year } : []
   })
 }
 
@@ -85,8 +82,7 @@ async function searchMovies(term: string) {
   }
   return results.flatMap<Page>(({ pageid, title }) => {
     let year = releaseYears[pageid]
-    if (!year) return []
-    return { pageid: pageid.toString(), title, year }
+    return year ? { pageid, title, year } : []
   })
 }
 
@@ -114,7 +110,7 @@ async function wikipediaRequest<T extends object>(
 }
 
 export interface Page {
-  pageid: string
+  pageid: number
   title: string
   year: number
 }

@@ -1,16 +1,27 @@
+import { Page } from "../api/search"
 import type { SocketRequest, SocketResponse } from "../api/ws"
 import { hasChars } from "../lib/utils"
 import "../style/global.css"
-import { gameEmitter, localToken } from "./client"
+import { callAPI, gameEmitter, localToken } from "./client"
 import {
   admittedPlayerList,
   availableGamesList,
+  currentRoundText,
+  gameStateContainer,
   joinRequestForm,
   lobbyContainer,
   main,
+  pageSubtitle,
   pageTitle,
   pendingPlayerList,
   pendingText,
+  roundsContainer,
+  scoreContainer,
+  searchContainer,
+  searchInput,
+  searchLabel,
+  searchResults,
+  spinner,
   startGameButton,
   waitingRoom
 } from "./elements"
@@ -65,8 +76,109 @@ function init() {
 
       pageTitle.textContent = isCreator ? "Your Game" : `${creator.name}'s Game`
 
+      // -------------------- Active Game --------------------
+      if (res.game.started) {
+        waitingRoom.remove()
+        pendingText.remove()
+
+        if (!main.contains(gameStateContainer))
+          pageTitle.after(gameStateContainer)
+
+        scoreContainer.innerHTML = ""
+        scoreContainer.append(
+          ...res.game.players.map(p => {
+            let li = document.createElement("li")
+            let nameContainer = document.createElement("span")
+            nameContainer.innerHTML = p.name
+            let lettersContainer = document.createElement("div")
+            lettersContainer.append(
+              ...["B", "O", "M", "B"].map((letter, i) => {
+                let span = document.createElement("span")
+                span.innerHTML = letter
+                if (p.letters > i) span.classList.add("red-text")
+                return span
+              })
+            )
+            li.append(nameContainer, lettersContainer)
+            return li
+          })
+        )
+
+        if (!main.contains(pageSubtitle)) scoreContainer.after(pageSubtitle)
+
+        let player = res.game.players.find(p => p.id == userId)!
+        let status = player.status
+        let { category } = res.game
+        let currentRound = res.game.rounds.at(-1)!
+
+        // -------------------- Your Turn --------------------
+        if (status == "active") {
+          pageTitle.textContent = "It's your turn!"
+          pageSubtitle.textContent = `Name ${category == "actor" ? "an actor" : "a movie"}`
+          let previousAnswer = currentRound.at(-1)
+          if (previousAnswer)
+            pageSubtitle.textContent += ` ${category == "actor" ? "from" : "starring"} ${previousAnswer.title}`
+          gameStateContainer.append(searchContainer)
+
+          let searchInputTimeout: null | ReturnType<typeof setTimeout> = null
+          searchLabel.append(`Search ${category}s`, searchInput)
+          searchInput.addEventListener("input", () => {
+            if (searchInputTimeout) clearTimeout(searchInputTimeout)
+            searchInputTimeout = setTimeout(async () => {
+              let query = searchInput.value.trim()
+              if (!hasChars(query, 3)) {
+                searchResults.innerHTML = ""
+                return
+              }
+              searchResults.innerHTML = spinner
+              let results = await callAPI<Array<Page>>(
+                `search/${category}?q=${query}`
+              )
+              if (results.length == 0) {
+                searchResults.innerHTML = "<p>No results, please try again</p>"
+                return
+              }
+              searchResults.innerHTML = ""
+              searchResults.append(
+                ...results.map(page => {
+                  let li = document.createElement("li")
+                  let text = document.createElement("div")
+                  let title = document.createElement("span")
+                  title.textContent = page.title.split(" (")[0]!
+                  let year = document.createElement("small")
+                  year.textContent = page.year.toString()
+                  text.append(title, year)
+                  let button = document.createElement("button")
+                  button.textContent = "Select"
+                  button.addEventListener("click", () => {
+                    sendRequest(ws, { key: "play_move", page })
+                  })
+                  li.append(text, button)
+                  return li
+                })
+              )
+            }, 600)
+          })
+        }
+
+        // -------------------- Someone Else's Turn --------------------
+        else if (status == "idle") {
+          searchInput.value = ""
+          searchLabel.innerHTML = ""
+          searchResults.innerHTML = ""
+          searchContainer.remove()
+        }
+
+        if (res.game.rounds?.length) {
+          currentRoundText.innerHTML = currentRound.reduce((acc, p) => {
+            return acc ? `${acc} --> ${p.title}` : p.title
+          }, "")
+        }
+        gameStateContainer.append(roundsContainer)
+      }
+
       // -------------------- Pending Game --------------------
-      if (!res.game.started) {
+      else {
         if (!main.contains(waitingRoom)) pageTitle.after(waitingRoom)
 
         pendingText.remove()

@@ -3,6 +3,7 @@ import { WebSocket } from "ws"
 import { hasChars } from "../lib/utils"
 import { decrypt, encrypt } from "./jose"
 import { Redis } from "./redis"
+import { Page } from "./search"
 
 let lobby = new Set<Socket>()
 export let games = new Map<string, Game>()
@@ -26,11 +27,14 @@ export async function onConnection(
 
   let player = game && userId ? game.players.find(p => p.id == userId) : null
 
+  let gameData: GameData = {}
+
   if (gameId && game && player) {
     player.socket = ws
-    let gameData = game.started
-      ? await new Redis(`game:${gameId}`).get()
-      : undefined
+    if (game.started) {
+      let cachedGameData = await new Redis(`game:${gameId}`).get()
+      gameData = cachedGameData ?? {}
+    }
     sendResponse(ws, getGameState(game, gameData))
   } else {
     if (game) sendResponse(ws, { key: "invalid_token" })
@@ -123,7 +127,38 @@ export async function onConnection(
       }
       game.players = game.players.filter(p => !p.pending)
       game.started = true
+      gameData = {}
       sendGameState(game)
+    }
+
+    // -------------------- Play Move --------------------
+    else if (req.key == "play_move") {
+      if (!game || !gameId) {
+        sendResponse(ws, { key: "error", message: "Game not found" })
+        return
+      }
+      let dataCache = new Redis(`game:${gameId}`)
+      let cachedGameData = await dataCache.get()
+      if (cachedGameData) gameData = cachedGameData
+      gameData.lastCategory =
+        gameData.lastCategory == "movie" ? "actor" : "movie"
+      if (!gameData.rounds) gameData.rounds = [[]]
+      gameData.rounds.at(-1)!.push(req.page)
+      let index = gameData.currentPlayerIndex ?? 0
+      let nextIndex = (index + 1) % game.players.length
+      let players = game.players.map(({ id, name }) => {
+        return {
+          id,
+          letters: gameData.letters?.[id] ?? 0,
+          name
+        }
+      })
+      while (players[nextIndex]!.letters > 3) {
+        nextIndex = (nextIndex + 1) % game.players.length
+      }
+      gameData.currentPlayerIndex = nextIndex
+      dataCache.set(gameData)
+      sendGameState(game, gameData)
     }
   })
 
@@ -155,12 +190,20 @@ function getGameState({ players, started }: Game, gameData: GameData = {}) {
       }
     } as const
 
-  let { challenged, currentPlayerIndex = 0, letters, ...game } = gameData
+  let {
+    challenged,
+    currentPlayerIndex = 0,
+    lastCategory,
+    letters,
+    rounds,
+    ...game
+  } = gameData
 
   return {
     key: "game_state",
     game: {
       ...game,
+      category: lastCategory == "movie" ? "actor" : "movie",
       players: players.map(({ socket, ...player }, i) => {
         return {
           connected: Boolean(socket),
@@ -174,6 +217,7 @@ function getGameState({ players, started }: Game, gameData: GameData = {}) {
           ...player
         } as const
       }),
+      rounds: rounds ?? [[]],
       started: true
     }
   } as const
@@ -219,18 +263,26 @@ interface Game {
 export interface GameData {
   challenged?: boolean
   currentPlayerIndex?: number
-  currentRound?: Array<string>
   lastCategory?: "actor" | "movie"
   letters?: Record<string, number>
-  previousRounds?: Array<Array<string>>
+  rounds?: Array<Array<Page>>
 }
 
 type GameResponse = ActiveGameResponse | PendingGameResponse
 
-interface ActiveGameResponse
+export interface ActiveGameResponse
   extends Omit<Game, "players" | "started">,
-    Omit<GameData, "challenged" | "currentPlayerIndex" | "letters"> {
+    Omit<
+      GameData,
+      | "challenged"
+      | "currentPlayerIndex"
+      | "lastCategory"
+      | "letters"
+      | "rounds"
+    > {
+  category: "actor" | "movie"
   players: Array<GameResponsePlayer>
+  rounds: Array<Array<Page>>
   started: true
 }
 
@@ -261,6 +313,7 @@ export type SocketRequest =
   | { key: "accept_join_request"; userId: string }
   | { key: "create_game"; name: string }
   | { key: "deny_join_request"; userId: string }
+  | { key: "play_move"; page: Page }
   | { key: "request_to_join"; gameId: string; message: string; name: string }
   | { key: "start_game" }
 

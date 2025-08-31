@@ -46,7 +46,6 @@ textarea {
   color: inherit;
   font-size: 1rem;
   padding: 0.5rem;
-  max-width: 65ch;
   width: 100%;
 }
 
@@ -86,7 +85,84 @@ textarea {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .spinner {
+    display: none;
+  }
+
   .toast {
     transition-duration: 0ms;
   }
+}
+
+.spinner {
+  animation: 1.25s linear spinner infinite;
+  height: 2rem;
+  width: 2rem;
+}
+
+@keyframes spinner {
+  0% {
+    stroke-dashoffset: 502;
+    stroke-dasharray: 150.6 100.4;
+  }
+  50% {
+    stroke-dasharray: 1 250;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    stroke-dasharray: 150.6 100.4;
+  }
+}
+
+.score-container {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  justify-content: center;
+}
+
+.score-container li {
+  align-items: center;
+  background-color: color-mix(in oklab, var(--gray) 10%, transparent);
+  border-radius: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 1.25rem;
+}
+
+.score-container li > span:first-child {
+  font-size: 2rem;
+}
+.score-container li > div {
+  font-size: 1.5rem;
+}
+
+.red-text {
+  color: var(--red);
+}
+
+.search-container {
+  margin-inline: auto;
+  max-width: 30rem;
+}
+
+.search-container ul {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.search-container ul li {
+  display: flex;
+  gap: 1.25rem;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.search-container ul li > div:first-child {
+  display: flex;
+  flex-direction: column;
 }

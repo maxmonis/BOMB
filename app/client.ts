@@ -71,3 +71,24 @@ class LocalStorage<
 export let localAudio = new LocalStorage("audio")
 export let localDark = new LocalStorage("dark")
 export let localToken = new LocalStorage("token")
+
+export async function callAPI<T>(
+  path: string,
+  { headers: headersInit, ...init }: RequestInit = {}
+) {
+  let token = localToken.get()
+  let res = await fetch(`/api/${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Package-Version": import.meta.env.PACKAGE_VERSION,
+      ...(token && { "X-Auth-Token": token }),
+      ...headersInit
+    }
+  })
+  let value: T = await res.json()
+  if (res.ok) return value
+  if (res.status == 409 && value == "New version available, please reload page")
+    window.location.reload()
+  throw value
+}

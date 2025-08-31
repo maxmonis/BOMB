@@ -8,6 +8,27 @@ export let main = document.querySelector("main")!
 export let pageTitle = document.querySelector("h1")!
 
 export let lobbyContainer = document.createElement("div")
+export let pageSubtitle = document.createElement("h2")
+
+export let spinner = `
+<svg
+  class="spinner"
+  height="40"
+  preserveAspectRatio="xMidYMid"
+  viewBox="0 0 100 100"
+  width="40"
+>
+  <rect fill="none" height="100" width="100" x="0" y="0"></rect>
+  <circle
+    cx="50"
+    cy="50"
+    fill="none"
+    r="40"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-width="12"
+  ></circle>
+</svg>`
 
 let createGameTitle = document.createElement("h2")
 createGameTitle.textContent = "Create New Game"
@@ -81,10 +102,9 @@ export let pendingText = document.createElement("p")
 
 export let waitingRoom = document.createElement("div")
 let playerListContainer = document.createElement("div")
-let playerListTitle = document.createElement("h2")
-playerListTitle.textContent = "Current Players"
+pageSubtitle.textContent = "Current Players"
 export let admittedPlayerList = document.createElement("ul")
-playerListContainer.append(playerListTitle, admittedPlayerList)
+playerListContainer.append(pageSubtitle, admittedPlayerList)
 export let pendingPlayerList = document.createElement("ul")
 waitingRoom.append(playerListContainer, pendingPlayerList)
 
@@ -93,3 +113,17 @@ startGameButton.textContent = "Start Game"
 startGameButton.addEventListener("click", () => {
   gameEmitter.post({ key: "start_game" })
 })
+
+export let gameStateContainer = document.createElement("div")
+export let scoreContainer = document.createElement("ul")
+scoreContainer.classList.add("score-container")
+gameStateContainer.append(scoreContainer)
+export let searchContainer = document.createElement("div")
+searchContainer.classList.add("search-container")
+export let searchLabel = document.createElement("label")
+export let searchInput = document.createElement("input")
+export let searchResults = document.createElement("ul")
+searchContainer.append(searchLabel, searchResults)
+export let roundsContainer = document.createElement("ol")
+export let currentRoundText = document.createElement("p")
+roundsContainer.append(currentRoundText)
