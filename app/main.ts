@@ -189,5 +189,5 @@ function getUserIdFromToken(token: unknown) {
 }
 
 function sendRequest(ws: WebSocket, req: SocketRequest) {
-  ws.send(JSON.stringify(req))
+  if (ws.readyState == WebSocket.OPEN) ws.send(JSON.stringify(req))
 }
