@@ -19,9 +19,9 @@ searchRoute.get("/:category", authToken, async (req, res) => {
 
 function extractYear(lines: Array<string>, regex: RegExp) {
   let line = lines.find(line => regex.test(line))
-  if (!line?.startsWith("|")) return null
-  let year = line.replace(/.*(\d{4}).*/, "$1")
-  return year ? parseInt(year) : null
+  if (!line || !/^\s*\|.*/.test(line)) return null
+  let matches = line.match(/\b(19|20)\d{2}\b/)
+  return matches ? parseInt(matches[0]) : null
 }
 
 function getDescription(lines: Array<string>) {
@@ -75,8 +75,7 @@ async function searchMovies(term: string) {
   for (let id of pageIds) {
     let lines = pageLines[id]
     if (!lines) continue
-    let description = getDescription(lines)
-    if (!description || !/film/i.test(description)) continue
+    if (!lines.some(line => /infobox film/i.test(line))) continue
     let releaseYear = extractYear(lines, /released/i)
     if (releaseYear) releaseYears[id] = releaseYear
   }
