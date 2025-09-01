@@ -108,14 +108,17 @@ function init() {
 
         let player = res.game.players.find(p => p.id == userId)!
         let status = player.status
-        let { category } = res.game
         let currentRound = res.game.rounds.at(-1)!
+        let previousAnswer = currentRound.at(-1)
+        let category =
+          previousAnswer && "releaseYear" in previousAnswer
+            ? ("actor" as const)
+            : ("movie" as const)
 
         // -------------------- Your Turn --------------------
         if (status == "active") {
           pageTitle.textContent = "It's your turn!"
           gameSubtitle.textContent = `Name ${category == "actor" ? "an actor" : "a movie"}`
-          let previousAnswer = currentRound.at(-1)
           if (previousAnswer)
             gameSubtitle.textContent += ` ${category == "actor" ? "from" : "starring"} ${previousAnswer.title}`
           gameStateContainer.append(searchContainer)
@@ -144,7 +147,10 @@ function init() {
                   let title = document.createElement("span")
                   title.textContent = page.title.split(" (")[0]!
                   let year = document.createElement("small")
-                  year.textContent = page.year.toString()
+                  year.textContent =
+                    "birthYear" in page
+                      ? page.birthYear.toString()
+                      : page.releaseYear.toString()
                   text.append(title, year)
                   let button = document.createElement("button")
                   button.textContent = "Select"
@@ -160,8 +166,13 @@ function init() {
         }
 
         // -------------------- Someone Else's Turn --------------------
-        else if (status == "idle") {
-          gameSubtitle.textContent = `${res.game.players.find(p => p.status == "active")!.name} is thinking...`
+        else if (!status) {
+          let challengedPlayer = res.game.players.find(
+            p => p.status == "challenged"
+          )
+          gameSubtitle.textContent = challengedPlayer
+            ? `${challengedPlayer} has been challenged!`
+            : `${res.game.players.find(p => p.status == "active")!.name} is thinking...`
           searchInput.value = ""
           searchLabel.innerHTML = ""
           searchResults.innerHTML = ""

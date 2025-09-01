@@ -61,9 +61,9 @@ async function searchActors(term: string) {
     let birthYear = extractYear(lines, /birth_date/i)
     if (birthYear) birthYears[id] = birthYear
   }
-  return results.flatMap<Page>(({ pageid, title }) => {
-    let year = birthYears[pageid]
-    return year ? { pageid, title: title.split(" (")[0]!, year } : []
+  return results.flatMap<ActorPage>(({ pageid, title }) => {
+    let birthYear = birthYears[pageid]
+    return birthYear ? { birthYear, pageid, title: title.split(" (")[0]! } : []
   })
 }
 
@@ -80,9 +80,11 @@ async function searchMovies(term: string) {
     let releaseYear = extractYear(lines, /released/i)
     if (releaseYear) releaseYears[id] = releaseYear
   }
-  return results.flatMap<Page>(({ pageid, title }) => {
-    let year = releaseYears[pageid]
-    return year ? { pageid, title: title.split(" (")[0]!, year } : []
+  return results.flatMap<MoviePage>(({ pageid, title }) => {
+    let releaseYear = releaseYears[pageid]
+    return releaseYear
+      ? { pageid, releaseYear, title: title.split(" (")[0]! }
+      : []
   })
 }
 
@@ -109,10 +111,19 @@ async function wikipediaRequest<T extends object>(
   return value
 }
 
-export interface Page {
+interface ActorPage extends WikiPage {
+  birthYear: number
+}
+
+interface MoviePage extends WikiPage {
+  releaseYear: number
+}
+
+export type Page = ActorPage | MoviePage
+
+interface WikiPage {
   pageid: number
   title: string
-  year: number
 }
 
 interface WikipediaError {

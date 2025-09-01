@@ -49,8 +49,8 @@ export async function onConnection(
     // -------------------- Create Game --------------------
     if (req.key == "create_game") {
       gameId = crypto.randomUUID()
-      player = { id: userId, name: req.name, socket: ws }
-      game = { players: [player], started: false }
+      player = { id: userId, name: req.name, socket: ws, status: "active" }
+      game = { players: [player] }
       games.set(gameId, game)
       lobby.delete(ws)
       let token = await encrypt({ gameId, userId })
@@ -119,7 +119,7 @@ export async function onConnection(
         return
       }
       game.players = game.players.filter(p => !p.pending)
-      game.started = true
+      game.rounds = [[]]
       sendGameState(game)
     }
 
@@ -129,22 +129,16 @@ export async function onConnection(
         sendResponse(ws, { key: "error", message: "Game not found" })
         return
       }
-      game.lastCategory = game.lastCategory == "movie" ? "actor" : "movie"
       if (!game.rounds) game.rounds = [[]]
       game.rounds.at(-1)!.push(req.page)
-      let index = game.currentPlayerIndex ?? 0
+      let index = game.players.findIndex(p => p.status)
       let nextIndex = (index + 1) % game.players.length
-      let players = game.players.map(({ id, name }) => {
-        return {
-          id,
-          letters: game?.letters?.[id] ?? 0,
-          name
-        }
-      })
-      while (players[nextIndex]!.letters > 3) {
+      while (game.players[nextIndex]!.letters! > 3)
         nextIndex = (nextIndex + 1) % game.players.length
-      }
-      game.currentPlayerIndex = nextIndex
+      game.players.forEach((player, i) => {
+        if (i == nextIndex) player.status = "active"
+        else delete player.status
+      })
       sendGameState(game)
     }
   })
@@ -157,24 +151,16 @@ export async function onConnection(
 function getAvailableGames() {
   return {
     key: "available_games",
-    games: Array.from(games.entries()).flatMap(([id, { players, started }]) => {
-      if (started) return []
+    games: Array.from(games.entries()).flatMap(([id, { players, rounds }]) => {
+      if (rounds) return []
       let creator = players[0]
       return creator ? { creatorName: creator.name, id } : []
     })
   } as const
 }
 
-function getGameState({
-  challenged,
-  currentPlayerIndex = 0,
-  lastCategory,
-  letters,
-  players,
-  rounds,
-  started
-}: Game) {
-  if (!started)
+function getGameState({ players, rounds }: Game) {
+  if (!rounds)
     return {
       key: "game_state",
       game: {
@@ -188,21 +174,14 @@ function getGameState({
   return {
     key: "game_state",
     game: {
-      category: lastCategory == "movie" ? "actor" : "movie",
-      players: players.map(({ socket, ...player }, i) => {
+      players: players.map(({ letters = 0, socket, ...player }) => {
         return {
           connected: Boolean(socket),
-          letters: letters?.[player.id] ?? 0,
-          status:
-            i == currentPlayerIndex
-              ? challenged
-                ? "challenged"
-                : "active"
-              : "idle",
+          letters,
           ...player
-        } as const
+        }
       }),
-      rounds: rounds ?? [[]],
+      rounds,
       started: true
     }
   } as const
@@ -241,19 +220,13 @@ setInterval(() => {
 }, 30_000)
 
 interface Game {
-  challenged?: boolean
-  currentPlayerIndex?: number
-  lastCategory?: "actor" | "movie"
-  letters?: Record<string, number>
   players: Array<Player>
   rounds?: Array<Array<Page>>
-  started: boolean
 }
 
 type GameResponse = ActiveGameResponse | PendingGameResponse
 
 interface ActiveGameResponse {
-  category: "actor" | "movie"
   players: Array<ActiveGamePlayer>
   rounds: Array<Array<Page>>
   started: true
@@ -268,7 +241,6 @@ interface ActiveGamePlayer
   extends Omit<Player, "message" | "pending" | "socket"> {
   connected: boolean
   letters: number
-  status: "active" | "challenged" | "idle"
 }
 
 interface PendingGamePlayer extends Omit<Player, "socket"> {
@@ -277,10 +249,12 @@ interface PendingGamePlayer extends Omit<Player, "socket"> {
 
 interface Player {
   id: string
+  letters?: number
   message?: string
   name: string
   pending?: boolean
   socket?: Socket
+  status?: "active" | "challenged"
 }
 
 interface Socket extends WebSocket {
