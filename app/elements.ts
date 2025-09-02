@@ -126,3 +126,36 @@ gameStateContainer.append(scoreContainer)
 export let roundsContainer = document.createElement("ol")
 export let currentRoundText = document.createElement("p")
 roundsContainer.append(currentRoundText)
+
+export let answerValidator = document.createElement("div")
+
+export let answerValidatorDialog = document.createElement("dialog")
+answerValidatorDialog.classList.add("validator-dialog")
+let answerValidatorDialogContent = document.createElement("div")
+export let answerValidatorDialogTitle = document.createElement("h1")
+let answerValidatorDialogButtons = document.createElement("div")
+answerValidatorDialogButtons.classList.add("dialog-button-container")
+let validAnswerButton = document.createElement("button")
+validAnswerButton.textContent = "Yes, it was a valid answer"
+validAnswerButton.autofocus = true
+validAnswerButton.addEventListener("click", () => {
+  answerValidatorDialog.close()
+  answerValidatorDialog.remove()
+})
+let invalidAnswerButton = document.createElement("button")
+invalidAnswerButton.classList.add("red-text")
+invalidAnswerButton.textContent = "No, give the previous player a letter"
+invalidAnswerButton.addEventListener("click", () => {
+  console.log("Giving a letter...")
+  answerValidatorDialog.close()
+  answerValidatorDialog.remove()
+})
+answerValidatorDialogButtons.append(validAnswerButton, invalidAnswerButton)
+answerValidatorDialog.addEventListener("click", e => {
+  if (e.target == answerValidatorDialog) answerValidatorDialog.close()
+})
+answerValidatorDialogContent.append(
+  answerValidatorDialogTitle,
+  answerValidatorDialogButtons
+)
+answerValidatorDialog.append(answerValidatorDialogContent)

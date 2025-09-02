@@ -5,6 +5,9 @@ import "../style/global.css"
 import { callAPI, gameEmitter, localToken } from "./client"
 import {
   admittedPlayerList,
+  answerValidator,
+  answerValidatorDialog,
+  answerValidatorDialogTitle,
   availableGamesList,
   currentRoundText,
   gameStateContainer,
@@ -66,6 +69,7 @@ function init() {
     // -------------------- Game State --------------------
     else if (res.key == "game_state") {
       lobbyContainer.remove()
+      answerValidator.remove()
 
       let creator = res.game.players[0]!
       let isCreator = userId == creator.id
@@ -106,6 +110,7 @@ function init() {
         let status = player.status
         let currentRound = res.game.rounds.at(-1)!
         let previousAnswer = currentRound.at(-1)
+        let allAnswers = res.game.rounds.flatMap(r => r)
         let category =
           previousAnswer && "releaseYear" in previousAnswer
             ? ("actor" as const)
@@ -157,6 +162,13 @@ function init() {
                       ? page.birthYear.toString()
                       : page.releaseYear.toString()
                   text.append(title, year)
+                  if (allAnswers.some(a => a.pageid == page.pageid)) {
+                    let check = document.createElement("span")
+                    check.textContent = "✅"
+                    check.style.fontSize = "1.25rem"
+                    li.append(text, check)
+                    return li
+                  }
                   let button = document.createElement("button")
                   button.textContent = "Select"
                   button.addEventListener("click", () => {
@@ -169,6 +181,35 @@ function init() {
               )
             }, 600)
           })
+
+          let priorAnswer = currentRound.at(-2)
+          if (previousAnswer && priorAnswer) {
+            let actor = category == "actor" ? priorAnswer : previousAnswer
+            let movie = category == "movie" ? priorAnswer : previousAnswer
+            let query = `was ${actor.title} in ${movie.title}?`
+
+            let searchLink = document.createElement("a")
+            searchLink.textContent = `Search "${query}"`
+            searchLink.setAttribute("target", "_blank")
+            searchLink.setAttribute("rel", "noopener")
+            searchLink.setAttribute(
+              "href",
+              `https://www.google.com/search?q=${query}`
+            )
+            answerValidatorDialogTitle.textContent = `So, ${query}`
+            searchLink.addEventListener("click", () => {
+              document.body.append(answerValidatorDialog)
+              answerValidatorDialog.showModal()
+            })
+
+            answerValidator.innerHTML = ""
+            answerValidator.append(
+              "Think the previous answer was incorrect?",
+              searchLink
+            )
+
+            gameStateContainer.append(answerValidator)
+          }
         }
 
         // -------------------- Someone Else's Turn --------------------
@@ -181,11 +222,12 @@ function init() {
             : `${res.game.players.find(p => p.status == "active")!.name} is thinking...`
         }
 
-        if (res.game.rounds?.length) {
+        if (res.game.rounds.length) {
           currentRoundText.innerHTML = currentRound.reduce((acc, p) => {
             return acc ? `${acc} &rarr; ${p.title}` : p.title
           }, "")
         }
+
         gameStateContainer.append(roundsContainer)
       }
 
