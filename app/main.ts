@@ -13,6 +13,7 @@ import {
   gameStateContainer,
   gameSubtitle,
   joinRequestForm,
+  lineBreak,
   lobbyContainer,
   main,
   pageTitle,
@@ -109,7 +110,8 @@ function init() {
 
         let player = res.game.players.find(p => p.id == userId)!
         let status = player.status
-        let currentRound = res.game.rounds.at(-1)!
+        let currentRound = res.game.rounds[0]!
+        let previousRounds = res.game.rounds.slice(1)
         let previousAnswer = currentRound.at(-1)
         let allAnswers = res.game.rounds.flatMap(r => r)
         let category =
@@ -224,10 +226,34 @@ function init() {
             : `${res.game.players.find(p => p.status == "active")!.name} is thinking...`
         }
 
-        if (res.game.rounds.length) {
+        roundsContainer.innerHTML = ""
+
+        if (currentRound.length) {
           currentRoundText.innerHTML = currentRound.reduce((acc, p) => {
             return acc ? `${acc} &rarr; ${p.title}` : p.title
           }, "")
+          roundsContainer.append("Current round:", lineBreak, currentRoundText)
+        }
+
+        let previousRoundContainer = document.createElement("div")
+        let previousRoundList = document.createElement("div")
+        if (previousRounds.length) {
+          previousRoundList.append(
+            ...previousRounds.map(round => {
+              let text = document.createElement("p")
+              text.innerHTML = round.reduce((acc, p) => {
+                return acc ? `${acc} &rarr; ${p.title}` : p.title
+              }, "")
+              return text
+            })
+          )
+          previousRoundContainer.append(
+            lineBreak,
+            "Previous rounds:",
+            lineBreak,
+            previousRoundList
+          )
+          roundsContainer.append(lineBreak, previousRoundContainer)
         }
 
         gameStateContainer.append(roundsContainer)

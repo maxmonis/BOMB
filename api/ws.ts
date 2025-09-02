@@ -129,7 +129,7 @@ export async function onConnection(
         sendResponse(ws, { key: "error", message: "Game not found" })
         return
       }
-      game.rounds?.at(-1)!.push(req.page)
+      game.rounds?.[0]!.push(req.page)
       let nextPlayer = findNextActivePlayer(game)
       if (!nextPlayer) return
       for (let player of game.players) {
@@ -167,7 +167,7 @@ export async function onConnection(
       for (let player of game.players)
         if (player.socket) sendResponse(player.socket, toastMessage)
 
-      game.rounds?.push([])
+      game.rounds?.unshift([])
 
       let nextPlayer = findNextActivePlayer(game)
       if (!nextPlayer) return

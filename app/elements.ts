@@ -9,6 +9,8 @@ export let pageTitle = document.querySelector("h1")!
 
 export let lobbyContainer = document.createElement("div")
 
+export let lineBreak = document.createElement("br")
+
 export let spinner = document.createElementNS(
   "http://www.w3.org/2000/svg",
   "svg"
@@ -125,7 +127,6 @@ scoreContainer.classList.add("score-container")
 gameStateContainer.append(scoreContainer)
 export let roundsContainer = document.createElement("ol")
 export let currentRoundText = document.createElement("p")
-roundsContainer.append(currentRoundText)
 
 export let searchContainer = document.createElement("div")
 searchContainer.classList.add("search-container")
