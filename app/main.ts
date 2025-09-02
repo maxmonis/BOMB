@@ -17,10 +17,6 @@ import {
   pendingText,
   roundsContainer,
   scoreContainer,
-  searchContainer,
-  searchInput,
-  searchLabel,
-  searchResults,
   spinner,
   startGameButton,
   waitingRoom
@@ -119,6 +115,15 @@ function init() {
         if (status == "active") {
           pageTitle.textContent = "It's your turn!"
           gameSubtitle.textContent = `Name ${category == "actor" ? "an actor" : "a movie"}`
+
+          let searchContainer = document.createElement("div")
+          searchContainer.classList.add("search-container")
+          let searchLabel = document.createElement("label")
+          let searchInput = document.createElement("input")
+          searchInput.autofocus = true
+          let searchResults = document.createElement("ul")
+          searchContainer.append(searchLabel, searchResults)
+
           if (previousAnswer)
             gameSubtitle.textContent += ` ${category == "actor" ? "from" : "starring"} ${previousAnswer.title}`
           gameStateContainer.append(searchContainer)
@@ -156,6 +161,7 @@ function init() {
                   button.textContent = "Select"
                   button.addEventListener("click", () => {
                     sendRequest(ws, { key: "play_move", page })
+                    searchContainer.remove()
                   })
                   li.append(text, button)
                   return li
@@ -173,10 +179,6 @@ function init() {
           gameSubtitle.textContent = challengedPlayer
             ? `${challengedPlayer} has been challenged!`
             : `${res.game.players.find(p => p.status == "active")!.name} is thinking...`
-          searchInput.value = ""
-          searchLabel.innerHTML = ""
-          searchResults.innerHTML = ""
-          searchContainer.remove()
         }
 
         if (res.game.rounds?.length) {
