@@ -129,16 +129,54 @@ export async function onConnection(
         sendResponse(ws, { key: "error", message: "Game not found" })
         return
       }
-      if (!game.rounds) game.rounds = [[]]
-      game.rounds.at(-1)!.push(req.page)
-      let index = game.players.findIndex(p => p.status)
-      let nextIndex = (index + 1) % game.players.length
-      while (game.players[nextIndex]!.letters! > 3)
-        nextIndex = (nextIndex + 1) % game.players.length
-      game.players.forEach((player, i) => {
-        if (i == nextIndex) player.status = "active"
+      game.rounds?.at(-1)!.push(req.page)
+      let nextPlayer = findNextActivePlayer(game)
+      if (!nextPlayer) return
+      for (let player of game.players) {
+        if (player.id == nextPlayer.id) player.status = "active"
         else delete player.status
-      })
+      }
+      sendGameState(game)
+    }
+
+    // -------------------- Mark Answer Incorrect --------------------
+    else if (req.key == "mark_answer_incorrect") {
+      if (!game) return
+
+      let activePlayer = game.players.find(p => p.status)
+      let previousPlayer = findPreviousActivePlayer(game)
+      if (!activePlayer || !previousPlayer) return
+
+      previousPlayer.letters = previousPlayer.letters
+        ? previousPlayer.letters + 1
+        : 1
+
+      let toastMessage = {
+        key: "toast",
+        message: `${activePlayer.name} marked that response as invalid.<br />${
+          previousPlayer.name
+        } has ${
+          previousPlayer.letters == 1
+            ? "a B"
+            : previousPlayer.letters == 4
+              ? "been eliminated"
+              : "BOMB".substring(0, previousPlayer.letters)
+        }`
+      } as const
+
+      for (let player of game.players)
+        if (player.socket) sendResponse(player.socket, toastMessage)
+
+      game.rounds?.push([])
+
+      let nextPlayer = findNextActivePlayer(game)
+      if (!nextPlayer) return
+
+      for (let player of game.players) {
+        if (player.id == nextPlayer.id) player.status = "active"
+        else delete player.status
+      }
+
       sendGameState(game)
     }
   })
@@ -146,6 +184,24 @@ export async function onConnection(
   ws.on("pong", () => {
     ws.alive = true
   })
+}
+
+function findNextActivePlayer(game: Game) {
+  if (!game) return null
+  let index = game.players.findIndex(p => p.status)
+  let nextIndex = (index + 1) % game.players.length
+  while (game.players[nextIndex]!.letters! > 3)
+    nextIndex = (nextIndex + 1) % game.players.length
+  return game.players[nextIndex] || null
+}
+
+function findPreviousActivePlayer(game: Game) {
+  if (!game) return null
+  let index = game.players.findIndex(p => p.status)
+  let prevIndex = (index - 1 + game.players.length) % game.players.length
+  while (game.players[prevIndex]!.letters! > 3)
+    prevIndex = (prevIndex - 1 + game.players.length) % game.players.length
+  return game.players[prevIndex] || null
 }
 
 function getAvailableGames() {
@@ -265,6 +321,7 @@ export type SocketRequest =
   | { key: "accept_join_request"; userId: string }
   | { key: "create_game"; name: string }
   | { key: "deny_join_request"; userId: string }
+  | { key: "mark_answer_incorrect" }
   | { key: "play_move"; page: Page }
   | { key: "request_to_join"; gameId: string; message: string; name: string }
   | { key: "start_game" }
@@ -279,4 +336,5 @@ export type SocketResponse =
   | { key: "invalid_token" }
   | { key: "join_request_accepted" }
   | { key: "join_request_denied" }
+  | { key: "toast"; message: string }
   | { key: "token"; token: string }

@@ -127,6 +127,8 @@ export let roundsContainer = document.createElement("ol")
 export let currentRoundText = document.createElement("p")
 roundsContainer.append(currentRoundText)
 
+export let searchContainer = document.createElement("div")
+searchContainer.classList.add("search-container")
 export let answerValidator = document.createElement("div")
 
 export let answerValidatorDialog = document.createElement("dialog")
@@ -146,7 +148,7 @@ let invalidAnswerButton = document.createElement("button")
 invalidAnswerButton.classList.add("red-text")
 invalidAnswerButton.textContent = "No, give the previous player a letter"
 invalidAnswerButton.addEventListener("click", () => {
-  console.log("Giving a letter...")
+  gameEmitter.post({ key: "mark_answer_incorrect" })
   answerValidatorDialog.close()
   answerValidatorDialog.remove()
 })

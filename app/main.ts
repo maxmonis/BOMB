@@ -20,6 +20,7 @@ import {
   pendingText,
   roundsContainer,
   scoreContainer,
+  searchContainer,
   spinner,
   startGameButton,
   waitingRoom
@@ -116,13 +117,14 @@ function init() {
             ? ("actor" as const)
             : ("movie" as const)
 
+        searchContainer.innerHTML = ""
+        searchContainer.remove()
+
         // -------------------- Your Turn --------------------
         if (status == "active") {
           pageTitle.textContent = "It's your turn!"
           gameSubtitle.textContent = `Name ${category == "actor" ? "an actor" : "a movie"}`
 
-          let searchContainer = document.createElement("div")
-          searchContainer.classList.add("search-container")
           let searchLabel = document.createElement("label")
           let searchInput = document.createElement("input")
           searchInput.autofocus = true
@@ -344,6 +346,8 @@ function init() {
       init()
     }
 
+    // -------------------- Toast --------------------
+    else if (res.key == "toast") showToast(res.message)
     // -------------------- Error --------------------
     else if (res.key == "error") showToast(`Error: ${res.message}`)
   }
@@ -351,6 +355,7 @@ function init() {
   gameEmitter.listen(data => {
     if (data.key == "create_game") sendRequest(ws, data)
     else if (data.key == "start_game") sendRequest(ws, data)
+    else if (data.key == "mark_answer_incorrect") sendRequest(ws, data)
     else if (data.key == "request_to_join")
       if (pendingGameId) sendRequest(ws, { ...data, gameId: pendingGameId })
   })
