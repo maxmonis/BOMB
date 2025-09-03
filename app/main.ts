@@ -307,6 +307,21 @@ function init() {
             : `${res.game.players.find(p => p.status == "active")!.name} is thinking...`
         }
 
+        let activePlayers = res.game.players.filter(
+          p => !p.letters || p.letters < 4
+        )
+        let winner = activePlayers.length == 1 ? activePlayers[0] : null
+
+        // -------------------- Game Over --------------------
+        if (winner) {
+          let isWinner = winner.id == userId
+          pageTitle.textContent = "Game Over"
+          gameSubtitle.textContent = isWinner
+            ? "Congratulations, you're the winner!"
+            : `${winner.name} wins, better luck next time!`
+          searchContainer.remove()
+        }
+
         roundsContainer.innerHTML = ""
 
         if (currentRound.length) {
