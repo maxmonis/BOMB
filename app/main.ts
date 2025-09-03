@@ -188,9 +188,14 @@ function init() {
 
           let priorAnswer = currentRound.at(-2)
           if (previousAnswer && priorAnswer) {
-            let actor = category == "actor" ? priorAnswer : previousAnswer
-            let movie = category == "movie" ? priorAnswer : previousAnswer
-            let query = `was ${actor.title} in ${movie.title}?`
+            let { actor, movie } =
+              "releaseYear" in previousAnswer
+                ? { actor: priorAnswer, movie: previousAnswer }
+                : "releaseYear" in priorAnswer
+                  ? { actor: previousAnswer, movie: priorAnswer }
+                  : { actor: null, movie: null }
+            if (!actor || !movie) return
+            let query = `was ${actor.title} in ${movie.title} (${movie.releaseYear})?`
 
             let searchLink = document.createElement("a")
             searchLink.textContent = `Search "${query}"`
