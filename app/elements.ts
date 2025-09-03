@@ -129,6 +129,7 @@ export let roundsContainer = document.createElement("ol")
 
 export let searchContainer = document.createElement("div")
 searchContainer.classList.add("search-container")
+export let challengeContainer = document.createElement("div")
 export let answerValidator = document.createElement("div")
 
 export let answerValidatorDialog = document.createElement("dialog")

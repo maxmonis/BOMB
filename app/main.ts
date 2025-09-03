@@ -9,6 +9,7 @@ import {
   answerValidatorDialog,
   answerValidatorDialogTitle,
   availableGamesList,
+  challengeContainer,
   gameStateContainer,
   gameSubtitle,
   joinRequestForm,
@@ -122,20 +123,13 @@ function init() {
         searchContainer.remove()
 
         // -------------------- Your Turn --------------------
-        if (status == "active") {
-          pageTitle.textContent = "It's your turn!"
+        if (status) {
           gameSubtitle.textContent = `Name ${category == "actor" ? "an actor" : "a movie"}`
 
           let searchLabel = document.createElement("label")
           let searchInput = document.createElement("input")
           searchInput.autofocus = true
           let searchResults = document.createElement("ul")
-          searchContainer.append(searchLabel, searchResults)
-
-          if (previousAnswer)
-            gameSubtitle.textContent += ` ${category == "actor" ? "from" : "starring"} ${previousAnswer.title}${"releaseYear" in previousAnswer ? ` (${previousAnswer.releaseYear})` : ""}`
-          gameStateContainer.append(searchContainer)
-
           let searchInputTimeout: null | ReturnType<typeof setTimeout> = null
           searchLabel.append(`Search ${category}s`, searchInput)
           searchInput.addEventListener("input", () => {
@@ -184,6 +178,30 @@ function init() {
               )
             }, 600)
           })
+          searchContainer.append(searchLabel, searchResults)
+          gameStateContainer.append(searchContainer)
+
+          if (previousAnswer)
+            gameSubtitle.textContent += ` ${category == "actor" ? "from" : "starring"} ${previousAnswer.title}${"releaseYear" in previousAnswer ? ` (${previousAnswer.releaseYear})` : ""}`
+        }
+
+        // -------------------- Regular Turn --------------------
+        if (status == "active") {
+          pageTitle.textContent = "It's your turn!"
+
+          if (previousAnswer) {
+            let challengeButton = document.createElement("button")
+            challengeButton.textContent = "Challenge Previous Player"
+            challengeButton.classList.add("red-text")
+            challengeButton.addEventListener("click", () => {
+              sendRequest(ws, { key: "challenge" })
+            })
+            challengeContainer.append(
+              "Can't think of anything?",
+              challengeButton
+            )
+            searchContainer.after(challengeContainer)
+          }
 
           let priorAnswer = currentRound.at(-2)
           if (previousAnswer && priorAnswer) {
@@ -220,13 +238,18 @@ function init() {
           }
         }
 
+        // -------------------- You've Been Challenged --------------------
+        else if (status == "challenged") {
+          pageTitle.textContent = "You've been challenged!"
+        }
+
         // -------------------- Someone Else's Turn --------------------
         else if (!status) {
           let challengedPlayer = res.game.players.find(
             p => p.status == "challenged"
           )
           gameSubtitle.textContent = challengedPlayer
-            ? `${challengedPlayer} has been challenged!`
+            ? `${challengedPlayer.name} has been challenged!`
             : `${res.game.players.find(p => p.status == "active")!.name} is thinking...`
         }
 

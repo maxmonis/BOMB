@@ -139,6 +139,29 @@ export async function onConnection(
       sendGameState(game)
     }
 
+    // -------------------- Challenge --------------------
+    else if (req.key == "challenge") {
+      if (!game) return
+
+      let activePlayer = game.players.find(p => p.status)
+      let previousPlayer = findPreviousActivePlayer(game)
+      if (!activePlayer || !previousPlayer) return
+
+      for (let player of game.players)
+        if (player.id == previousPlayer.id) player.status = "challenged"
+        else delete player.status
+
+      let toastMessage = {
+        key: "toast",
+        message: `${activePlayer.name} has challenged ${previousPlayer.name}'s response!`
+      } as const
+
+      for (let player of game.players)
+        if (player.socket) sendResponse(player.socket, toastMessage)
+
+      sendGameState(game)
+    }
+
     // -------------------- Mark Answer Incorrect --------------------
     else if (req.key == "mark_answer_incorrect") {
       if (!game) return
@@ -319,6 +342,7 @@ interface Socket extends WebSocket {
 
 export type SocketRequest =
   | { key: "accept_join_request"; userId: string }
+  | { key: "challenge" }
   | { key: "create_game"; name: string }
   | { key: "deny_join_request"; userId: string }
   | { key: "mark_answer_incorrect" }
