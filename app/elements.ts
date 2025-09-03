@@ -131,6 +131,7 @@ export let searchContainer = document.createElement("div")
 searchContainer.classList.add("search-container")
 export let challengeContainer = document.createElement("div")
 export let answerValidator = document.createElement("div")
+export let giveUpContainer = document.createElement("div")
 
 export let answerValidatorDialog = document.createElement("dialog")
 answerValidatorDialog.classList.add("validator-dialog")
@@ -138,7 +139,7 @@ let answerValidatorDialogContent = document.createElement("div")
 export let answerValidatorDialogTitle = document.createElement("h1")
 let answerValidatorDialogButtons = document.createElement("div")
 answerValidatorDialogButtons.classList.add("dialog-button-container")
-let validAnswerButton = document.createElement("button")
+export let validAnswerButton = document.createElement("button")
 validAnswerButton.textContent = "Yes, it was a valid answer"
 validAnswerButton.autofocus = true
 validAnswerButton.addEventListener("click", () => {

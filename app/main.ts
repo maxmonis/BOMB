@@ -12,6 +12,7 @@ import {
   challengeContainer,
   gameStateContainer,
   gameSubtitle,
+  giveUpContainer,
   joinRequestForm,
   lineBreak,
   lobbyContainer,
@@ -24,6 +25,7 @@ import {
   searchContainer,
   spinner,
   startGameButton,
+  validAnswerButton,
   waitingRoom
 } from "./elements"
 import { initUI, showToast } from "./ui"
@@ -119,8 +121,12 @@ function init() {
             ? ("actor" as const)
             : ("movie" as const)
 
+        challengeContainer.innerHTML = ""
+        challengeContainer.remove()
         searchContainer.innerHTML = ""
         searchContainer.remove()
+        giveUpContainer.innerHTML = ""
+        giveUpContainer.remove()
 
         // -------------------- Your Turn --------------------
         if (status) {
@@ -241,6 +247,54 @@ function init() {
         // -------------------- You've Been Challenged --------------------
         else if (status == "challenged") {
           pageTitle.textContent = "You've been challenged!"
+          let giveUpButton = document.createElement("button")
+          giveUpButton.textContent = "Give Up"
+          giveUpButton.classList.add("red-text")
+          giveUpButton.addEventListener("click", () => {
+            sendRequest(ws, { key: "give_up" })
+          })
+          giveUpContainer.append("Can't think of anything?", giveUpButton)
+          gameStateContainer.append(giveUpContainer)
+        }
+
+        // -------------------- You're Reviewing --------------------
+        else if (status == "reviewing") {
+          pageTitle.textContent = "Your challenge was answered!"
+          gameSubtitle.textContent = "Is this response correct?"
+          searchContainer.remove()
+          let priorAnswer = currentRound.at(-2)
+          if (previousAnswer && priorAnswer) {
+            let { actor, movie } =
+              "releaseYear" in previousAnswer
+                ? { actor: priorAnswer, movie: previousAnswer }
+                : "releaseYear" in priorAnswer
+                  ? { actor: previousAnswer, movie: priorAnswer }
+                  : { actor: null, movie: null }
+            if (!actor || !movie) return
+            let query = `was ${actor.title} in ${movie.title} (${movie.releaseYear})?`
+
+            let searchLink = document.createElement("a")
+            searchLink.textContent = `Search "${query}"`
+            searchLink.setAttribute("target", "_blank")
+            searchLink.setAttribute("rel", "noopener")
+            searchLink.setAttribute(
+              "href",
+              `https://www.google.com/search?q=${query}`
+            )
+            answerValidatorDialogTitle.textContent = `So, ${query}`
+            validAnswerButton.addEventListener("click", () => {
+              sendRequest(ws, { key: "mark_answer_correct" })
+            })
+            searchLink.addEventListener("click", () => {
+              document.body.append(answerValidatorDialog)
+              answerValidatorDialog.showModal()
+            })
+
+            answerValidator.innerHTML = ""
+            answerValidator.append(searchLink)
+
+            gameStateContainer.append(answerValidator)
+          }
         }
 
         // -------------------- Someone Else's Turn --------------------

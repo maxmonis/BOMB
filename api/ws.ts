@@ -132,8 +132,10 @@ export async function onConnection(
       game.rounds?.[0]!.push(req.page)
       let nextPlayer = findNextActivePlayer(game)
       if (!nextPlayer) return
+      let challenge = game.players.some(p => p.status == "challenged")
       for (let player of game.players) {
-        if (player.id == nextPlayer.id) player.status = "active"
+        if (player.id == nextPlayer.id)
+          player.status = challenge ? "reviewing" : "active"
         else delete player.status
       }
       sendGameState(game)
@@ -153,11 +155,83 @@ export async function onConnection(
 
       let toastMessage = {
         key: "toast",
-        message: `${activePlayer.name} has challenged ${previousPlayer.name}'s response!`
+        message: `${activePlayer.name} has challenged ${previousPlayer.name}!`
       } as const
 
       for (let player of game.players)
         if (player.socket) sendResponse(player.socket, toastMessage)
+
+      sendGameState(game)
+    }
+
+    // -------------------- Give Up --------------------
+    else if (req.key == "give_up") {
+      if (!game) return
+      let challengedPlayer = game.players.find(p => p.status == "challenged")
+      if (!challengedPlayer) return
+      challengedPlayer.letters = challengedPlayer.letters
+        ? challengedPlayer.letters + 1
+        : 1
+      let toastMessage = {
+        key: "toast",
+        message: `${challengedPlayer.name} gave up and now has ${
+          challengedPlayer.letters == 1
+            ? "a B"
+            : challengedPlayer.letters == 4
+              ? "been eliminated"
+              : "BOMB".substring(0, challengedPlayer.letters)
+        }`
+      } as const
+
+      for (let player of game.players)
+        if (player.socket) sendResponse(player.socket, toastMessage)
+
+      game.rounds?.unshift([])
+
+      let nextPlayer = findNextActivePlayer(game)
+      if (!nextPlayer) return
+
+      for (let player of game.players) {
+        if (player.id == nextPlayer.id) player.status = "active"
+        else delete player.status
+      }
+
+      sendGameState(game)
+    }
+
+    // -------------------- Mark Answer Correct --------------------
+    else if (req.key == "mark_answer_correct") {
+      if (!game) return
+      let reviewingPlayer = game.players.find(p => p.status == "reviewing")
+      if (!reviewingPlayer) return
+      reviewingPlayer.letters = reviewingPlayer.letters
+        ? reviewingPlayer.letters + 1
+        : 1
+      let toastMessage = {
+        key: "toast",
+        message: `${
+          reviewingPlayer.name
+        }'s challenge was unsuccesful.<br />They now have ${
+          reviewingPlayer.letters == 1
+            ? "a B"
+            : reviewingPlayer.letters == 4
+              ? "been eliminated"
+              : "BOMB".substring(0, reviewingPlayer.letters)
+        }`
+      } as const
+
+      for (let player of game.players)
+        if (player.socket) sendResponse(player.socket, toastMessage)
+
+      game.rounds?.unshift([])
+
+      let nextPlayer = findNextActivePlayer(game)
+      if (!nextPlayer) return
+
+      for (let player of game.players) {
+        if (player.id == nextPlayer.id) player.status = "active"
+        else delete player.status
+      }
 
       sendGameState(game)
     }
@@ -333,7 +407,7 @@ interface Player {
   name: string
   pending?: boolean
   socket?: Socket
-  status?: "active" | "challenged"
+  status?: "active" | "challenged" | "reviewing"
 }
 
 interface Socket extends WebSocket {
@@ -345,7 +419,9 @@ export type SocketRequest =
   | { key: "challenge" }
   | { key: "create_game"; name: string }
   | { key: "deny_join_request"; userId: string }
+  | { key: "give_up" }
   | { key: "mark_answer_incorrect" }
+  | { key: "mark_answer_correct" }
   | { key: "play_move"; page: Page }
   | { key: "request_to_join"; gameId: string; message: string; name: string }
   | { key: "start_game" }
