@@ -90,7 +90,9 @@ async function searchMovies(term: string) {
 function searchWiki(term: string) {
   return wikipediaRequest<{
     query: { search: Array<{ pageid: number; snippet: string; title: string }> }
-  }>({ list: "search", srsearch: term }).then(({ query: { search } }) => search)
+  }>({ list: "search", srlimit: "50", srsearch: term }).then(
+    ({ query: { search } }) => search
+  )
 }
 
 async function wikipediaRequest<T extends object>(
