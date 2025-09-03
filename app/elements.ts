@@ -163,3 +163,39 @@ answerValidatorDialogContent.append(
   answerValidatorDialogButtons
 )
 answerValidatorDialog.append(answerValidatorDialogContent)
+
+let leaveGameDialog = document.createElement("dialog")
+leaveGameDialog.classList.add("validator-dialog")
+let leaveGameDialogContent = document.createElement("div")
+let leaveGameDialogTitle = document.createElement("h1")
+leaveGameDialogTitle.textContent = "Leave Game?"
+let leaveGameDialogButtons = document.createElement("div")
+leaveGameDialogButtons.classList.add("dialog-button-container")
+let stayInGameButton = document.createElement("button")
+stayInGameButton.textContent = "No, continue playing"
+stayInGameButton.autofocus = true
+stayInGameButton.addEventListener("click", () => {
+  leaveGameDialog.close()
+  leaveGameDialog.remove()
+})
+let leaveGameButton = document.createElement("button")
+leaveGameButton.classList.add("red-text")
+leaveGameButton.textContent = "Yes, permanently leave"
+leaveGameButton.addEventListener("click", () => {
+  gameEmitter.post({ key: "leave_game" })
+  leaveGameDialog.close()
+  leaveGameDialog.remove()
+})
+leaveGameDialogButtons.append(stayInGameButton, leaveGameButton)
+leaveGameDialog.addEventListener("click", e => {
+  if (e.target == leaveGameDialog) leaveGameDialog.close()
+})
+leaveGameDialogContent.append(leaveGameDialogTitle, leaveGameDialogButtons)
+leaveGameDialog.append(leaveGameDialogContent)
+export let leaveGameDialogButton = document.createElement("button")
+leaveGameDialogButton.textContent = "Leave Game"
+leaveGameDialogButton.classList.add("red-text")
+leaveGameDialogButton.addEventListener("click", () => {
+  document.body.append(leaveGameDialog)
+  leaveGameDialog.showModal()
+})

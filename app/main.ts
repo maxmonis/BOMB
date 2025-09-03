@@ -14,6 +14,7 @@ import {
   gameSubtitle,
   giveUpContainer,
   joinRequestForm,
+  leaveGameDialogButton,
   lineBreak,
   lobbyContainer,
   main,
@@ -49,6 +50,9 @@ function init() {
   let pendingGameId: string | null = null
 
   pageTitle.textContent = "Lobby"
+  answerValidator.remove()
+  gameStateContainer.remove()
+  waitingRoom.remove()
 
   ws.onerror = () => {
     localToken.remove()
@@ -73,7 +77,6 @@ function init() {
     // -------------------- Game State --------------------
     else if (res.key == "game_state") {
       lobbyContainer.remove()
-      answerValidator.remove()
 
       let creator = res.game.players[0]!
       let isCreator = userId == creator.id
@@ -116,10 +119,8 @@ function init() {
         let previousRounds = res.game.rounds.slice(1)
         let previousAnswer = currentRound.at(-1)
         let allAnswers = res.game.rounds.flatMap(r => r)
-        let category =
-          previousAnswer && "releaseYear" in previousAnswer
-            ? ("actor" as const)
-            : ("movie" as const)
+        let category: "actor" | "movie" =
+          previousAnswer && "releaseYear" in previousAnswer ? "actor" : "movie"
 
         challengeContainer.innerHTML = ""
         challengeContainer.remove()
@@ -353,7 +354,7 @@ function init() {
           roundsContainer.append(lineBreak, previousRoundContainer)
         }
 
-        gameStateContainer.append(roundsContainer)
+        gameStateContainer.append(roundsContainer, leaveGameDialogButton)
       }
 
       // -------------------- Pending Game --------------------
@@ -419,6 +420,8 @@ function init() {
         pendingPlayerList.innerHTML = ""
         if (pendingPlayers.length) pendingPlayerList.append(...pendingPlayers)
 
+        pendingPlayerList.after(leaveGameDialogButton)
+
         if (admittedPlayers.length > 1 && !main.contains(startGameButton))
           pendingPlayerList.after(startGameButton)
       }
@@ -479,8 +482,14 @@ function init() {
     if (data.key == "create_game") sendRequest(ws, data)
     else if (data.key == "start_game") sendRequest(ws, data)
     else if (data.key == "mark_answer_incorrect") sendRequest(ws, data)
-    else if (data.key == "request_to_join")
+    else if (data.key == "leave_game") {
+      if (userId) sendRequest(ws, { key: "leave_game", userId })
+      localToken.remove()
+      ws.close()
+      init()
+    } else if (data.key == "request_to_join") {
       if (pendingGameId) sendRequest(ws, { ...data, gameId: pendingGameId })
+    }
   })
 }
 

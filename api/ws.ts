@@ -123,6 +123,46 @@ export async function onConnection(
       sendGameState(game)
     }
 
+    // -------------------- Leave Game --------------------
+    else if (req.key == "leave_game") {
+      if (!game || !gameId) {
+        sendResponse(ws, { key: "error", message: "Game not found" })
+        return
+      }
+      let leavingPlayer = game.players.find(p => p.id == req.userId)
+      if (!leavingPlayer) {
+        sendResponse(ws, { key: "error", message: "Player not found" })
+        return
+      }
+
+      if (game.rounds) {
+        leavingPlayer.letters = 4
+        for (let player of game.players)
+          if (player.socket)
+            sendResponse(player.socket, {
+              key: "toast",
+              message: `${leavingPlayer.name} left and has been eliminated`
+            })
+
+        let nextPlayer = findNextActivePlayer(game)
+        if (nextPlayer)
+          for (let player of game.players) {
+            if (player.id == nextPlayer.id) player.status = "active"
+            else delete player.status
+          }
+
+        sendGameState(game)
+      } else {
+        game.players = game.players.filter(p => p.id != userId)
+
+        let [newHost] = game.players
+        if (newHost) newHost.status == "active"
+        else games.delete(gameId)
+
+        for (let socket of lobby) sendResponse(socket, getAvailableGames())
+      }
+    }
+
     // -------------------- Play Move --------------------
     else if (req.key == "play_move") {
       if (!game) {
@@ -130,14 +170,14 @@ export async function onConnection(
         return
       }
       game.rounds?.[0]!.push(req.page)
-      let nextPlayer = findNextActivePlayer(game)
-      if (!nextPlayer) return
       let challenge = game.players.some(p => p.status == "challenged")
-      for (let player of game.players) {
-        if (player.id == nextPlayer.id)
-          player.status = challenge ? "reviewing" : "active"
-        else delete player.status
-      }
+      let nextPlayer = findNextActivePlayer(game)
+      if (nextPlayer)
+        for (let player of game.players) {
+          if (player.id == nextPlayer.id)
+            player.status = challenge ? "reviewing" : "active"
+          else delete player.status
+        }
       sendGameState(game)
     }
 
@@ -189,12 +229,11 @@ export async function onConnection(
       game.rounds?.unshift([])
 
       let nextPlayer = findNextActivePlayer(game)
-      if (!nextPlayer) return
-
-      for (let player of game.players) {
-        if (player.id == nextPlayer.id) player.status = "active"
-        else delete player.status
-      }
+      if (nextPlayer)
+        for (let player of game.players) {
+          if (player.id == nextPlayer.id) player.status = "active"
+          else delete player.status
+        }
 
       sendGameState(game)
     }
@@ -420,6 +459,7 @@ export type SocketRequest =
   | { key: "create_game"; name: string }
   | { key: "deny_join_request"; userId: string }
   | { key: "give_up" }
+  | { key: "leave_game"; userId: string }
   | { key: "mark_answer_incorrect" }
   | { key: "mark_answer_correct" }
   | { key: "play_move"; page: Page }
