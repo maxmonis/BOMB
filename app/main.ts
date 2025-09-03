@@ -18,6 +18,7 @@ import {
   lineBreak,
   lobbyContainer,
   main,
+  pageContent,
   pageTitle,
   pendingPlayerList,
   pendingText,
@@ -49,10 +50,7 @@ function init() {
 
   let pendingGameId: string | null = null
 
-  pageTitle.textContent = "Lobby"
-  answerValidator.remove()
-  gameStateContainer.remove()
-  waitingRoom.remove()
+  pageContent.innerHTML = ""
 
   ws.onerror = () => {
     localToken.remove()
@@ -76,8 +74,6 @@ function init() {
 
     // -------------------- Game State --------------------
     else if (res.key == "game_state") {
-      lobbyContainer.remove()
-
       let creator = res.game.players[0]!
       let isCreator = userId == creator.id
 
@@ -85,11 +81,10 @@ function init() {
 
       // -------------------- Active Game --------------------
       if (res.game.started) {
-        waitingRoom.remove()
-        pendingText.remove()
-
-        if (!main.contains(gameStateContainer))
-          pageTitle.after(gameStateContainer)
+        if (!pageContent.contains(gameStateContainer)) {
+          pageContent.innerHTML = ""
+          pageContent.append(gameStateContainer)
+        }
 
         scoreContainer.innerHTML = ""
         scoreContainer.append(
@@ -189,7 +184,13 @@ function init() {
           gameStateContainer.append(searchContainer)
 
           if (previousAnswer)
-            gameSubtitle.textContent += ` ${category == "actor" ? "from" : "starring"} ${previousAnswer.title}${"releaseYear" in previousAnswer ? ` (${previousAnswer.releaseYear})` : ""}`
+            gameSubtitle.textContent += ` ${
+              category == "actor" ? "from" : "starring"
+            } ${previousAnswer.title}${
+              "releaseYear" in previousAnswer
+                ? ` (${previousAnswer.releaseYear})`
+                : ""
+            }`
         }
 
         // -------------------- Regular Turn --------------------
@@ -247,6 +248,7 @@ function init() {
 
         // -------------------- You've Been Challenged --------------------
         else if (status == "challenged") {
+          answerValidator.remove()
           pageTitle.textContent = "You've been challenged!"
           let giveUpButton = document.createElement("button")
           giveUpButton.textContent = "Give Up"
@@ -260,6 +262,7 @@ function init() {
 
         // -------------------- You're Reviewing --------------------
         else if (status == "reviewing") {
+          answerValidator.remove()
           pageTitle.textContent = "Your challenge was answered!"
           gameSubtitle.textContent = "Is this response correct?"
           searchContainer.remove()
@@ -300,6 +303,7 @@ function init() {
 
         // -------------------- Someone Else's Turn --------------------
         else if (!status) {
+          answerValidator.remove()
           let challengedPlayer = res.game.players.find(
             p => p.status == "challenged"
           )
@@ -359,20 +363,23 @@ function init() {
 
       // -------------------- Pending Game --------------------
       else {
-        if (!main.contains(waitingRoom)) pageTitle.after(waitingRoom)
-
-        pendingText.remove()
+        if (!pageContent.contains(waitingRoom)) {
+          pageContent.innerHTML = ""
+          pageContent.append(waitingRoom)
+        }
 
         if (res.game.players.some(p => p.id == userId && p.pending)) {
           pageTitle.textContent = "Awaiting Response..."
           pendingText.textContent =
             "Your join request has been submitted and you will be " +
             "notified when the host accepts or rejects your request."
-          waitingRoom.after(pendingText)
+          waitingRoom.append(pendingText)
         } else if (!isCreator) {
           pendingText.textContent = "Waiting for the host to start the game..."
-          waitingRoom.after(pendingText)
-        }
+          waitingRoom.append(pendingText)
+        } else pendingText.remove()
+
+        waitingRoom.append(leaveGameDialogButton)
 
         admittedPlayerList.innerHTML = ""
         let admittedPlayers = res.game.players.flatMap(p => {
@@ -420,8 +427,6 @@ function init() {
         pendingPlayerList.innerHTML = ""
         if (pendingPlayers.length) pendingPlayerList.append(...pendingPlayers)
 
-        pendingPlayerList.after(leaveGameDialogButton)
-
         if (admittedPlayers.length > 1 && !main.contains(startGameButton))
           pendingPlayerList.after(startGameButton)
       }
@@ -429,7 +434,10 @@ function init() {
 
     // -------------------- Available Games --------------------
     else if (res.key == "available_games") {
-      if (!main.contains(lobbyContainer)) pageTitle.after(lobbyContainer)
+      if (!pageContent.contains(lobbyContainer)) {
+        pageContent.innerHTML = ""
+        pageContent.append(lobbyContainer)
+      }
 
       availableGamesList.innerHTML = ""
       if (res.games.length == 0) {
@@ -459,14 +467,11 @@ function init() {
       )
     }
 
-    // -------------------- Join Request Accepted --------------------
-    else if (res.key == "join_request_accepted")
-      showToast("You've been admitted 😁")
     // -------------------- Join Request Denied --------------------
     else if (res.key == "join_request_denied") {
       waitingRoom.remove()
       pendingText.remove()
-      showToast("Your join request was denied 😔")
+      showToast("Your join request was denied")
       localToken.remove()
       ws.close()
       init()
@@ -483,7 +488,7 @@ function init() {
     else if (data.key == "start_game") sendRequest(ws, data)
     else if (data.key == "mark_answer_incorrect") sendRequest(ws, data)
     else if (data.key == "leave_game") {
-      if (userId) sendRequest(ws, { key: "leave_game", userId })
+      sendRequest(ws, { key: "leave_game" })
       localToken.remove()
       ws.close()
       init()

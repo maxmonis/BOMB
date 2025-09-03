@@ -1,16 +1,14 @@
 import { hasChars } from "../lib/utils"
 import { gameEmitter } from "./client"
 
-export let footer = document.querySelector("footer")!
-export let header = document.querySelector("header")!
-export let instructions = document.querySelector<HTMLElement>(".instructions")!
 export let main = document.querySelector("main")!
 export let pageTitle = document.querySelector("h1")!
 
-export let lobbyContainer = document.createElement("div")
+export let pageContent = document.createElement("div")
+pageTitle.after(pageContent)
 
+// -------------------- Utilities --------------------
 export let lineBreak = document.createElement("br")
-
 export let spinner = document.createElementNS(
   "http://www.w3.org/2000/svg",
   "svg"
@@ -35,6 +33,9 @@ circle.setAttribute("stroke", "currentColor")
 circle.setAttribute("stroke-linecap", "round")
 circle.setAttribute("stroke-width", "12")
 spinner.append(rect, circle)
+
+// -------------------- Lobby --------------------
+export let lobbyContainer = document.createElement("div")
 
 let createGameTitle = document.createElement("h2")
 createGameTitle.textContent = "Create New Game"
@@ -71,6 +72,7 @@ lobbyContainer.append(
   availableGamesList
 )
 
+// -------------------- Game Join Request --------------------
 export let joinRequestForm = document.createElement("form")
 let nameLabel = document.createElement("label")
 let nameInput = document.createElement("input")
@@ -106,6 +108,7 @@ joinRequestForm.append(nameLabel, messageLabel, nameFormButton)
 
 export let pendingText = document.createElement("p")
 
+// -------------------- Waiting Room --------------------
 export let gameSubtitle = document.createElement("h2")
 export let waitingRoom = document.createElement("div")
 let playerListContainer = document.createElement("div")
@@ -121,6 +124,7 @@ startGameButton.addEventListener("click", () => {
   gameEmitter.post({ key: "start_game" })
 })
 
+// -------------------- Active Game --------------------
 export let gameStateContainer = document.createElement("div")
 export let scoreContainer = document.createElement("ul")
 scoreContainer.classList.add("score-container")
@@ -164,6 +168,7 @@ answerValidatorDialogContent.append(
 )
 answerValidatorDialog.append(answerValidatorDialogContent)
 
+// -------------------- Leave Game Dialog --------------------
 let leaveGameDialog = document.createElement("dialog")
 leaveGameDialog.classList.add("validator-dialog")
 let leaveGameDialogContent = document.createElement("div")
