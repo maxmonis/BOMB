@@ -87,6 +87,7 @@ dialog > div {
 
 dialog h1 {
   font-size: 1.125rem;
+  letter-spacing: normal;
   text-align: left;
 }
 
@@ -196,9 +197,11 @@ dialog h1 {
 }
 
 .search-container ul li {
+  border-block-end: 1px solid var(--slate);
   display: flex;
   gap: 1.25rem;
   justify-content: space-between;
+  padding-block-end: 0.75rem;
   width: 100%;
 }
 

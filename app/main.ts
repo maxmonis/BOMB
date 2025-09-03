@@ -9,7 +9,6 @@ import {
   answerValidatorDialog,
   answerValidatorDialogTitle,
   availableGamesList,
-  currentRoundText,
   gameStateContainer,
   gameSubtitle,
   joinRequestForm,
@@ -134,7 +133,7 @@ function init() {
           searchContainer.append(searchLabel, searchResults)
 
           if (previousAnswer)
-            gameSubtitle.textContent += ` ${category == "actor" ? "from" : "starring"} ${previousAnswer.title}`
+            gameSubtitle.textContent += ` ${category == "actor" ? "from" : "starring"} ${previousAnswer.title}${"releaseYear" in previousAnswer ? ` (${previousAnswer.releaseYear})` : ""}`
           gameStateContainer.append(searchContainer)
 
           let searchInputTimeout: null | ReturnType<typeof setTimeout> = null
@@ -234,6 +233,7 @@ function init() {
         roundsContainer.innerHTML = ""
 
         if (currentRound.length) {
+          let currentRoundText = document.createElement("p")
           currentRoundText.innerHTML = currentRound.reduce((acc, p) => {
             return acc ? `${acc} &rarr; ${p.title}` : p.title
           }, "")

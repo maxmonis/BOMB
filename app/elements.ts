@@ -126,7 +126,6 @@ export let scoreContainer = document.createElement("ul")
 scoreContainer.classList.add("score-container")
 gameStateContainer.append(scoreContainer)
 export let roundsContainer = document.createElement("ol")
-export let currentRoundText = document.createElement("p")
 
 export let searchContainer = document.createElement("div")
 searchContainer.classList.add("search-container")
