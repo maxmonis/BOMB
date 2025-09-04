@@ -4,11 +4,11 @@ import { hasChars } from "../lib/utils"
 import "../style/global.css"
 import { callAPI, localToken } from "./client"
 import { lineBreak, pageTitle, spinner } from "./elements"
-import { initUI, showToast } from "./ui"
+import { applyDark, showToast } from "./ui"
 
 if (location.pathname != "/") location.replace(location.origin)
 
-initUI()
+applyDark()
 init()
 
 function init() {

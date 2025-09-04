@@ -1,58 +1,33 @@
-import { localAudio, localDark, themeChannel } from "./client"
-
-let audio = localAudio.get()
+import { darkChannel, localDark } from "./client"
 
 let defaultDark = window.matchMedia("(prefers-color-scheme: dark)").matches
 let dark = localDark.get() ?? defaultDark
 
-let audioToggle = document.createElement("button")
-audioToggle.title = "Toggle audio"
 let darkToggle = document.createElement("button")
 darkToggle.title = "Toggle dark mode"
-
-audioToggle.addEventListener("click", () => {
-  audio = !audio
-  localAudio.set(audio)
-  applyAudio()
-  themeChannel.post("audio")
-})
-
-function applyAudio() {
-  audioToggle.innerText = audio ? "🔊" : "🔇"
-}
 
 darkToggle.addEventListener("click", () => {
   dark = !dark
   localDark.set(dark)
   applyDark()
-  themeChannel.post("dark")
+  darkChannel.post(dark)
 })
 
-function applyDark() {
+darkChannel.listen(newDark => {
+  dark = newDark
+  applyDark()
+})
+
+export function applyDark() {
   document.body.classList.toggle("dark", dark)
   darkToggle.innerText = dark ? "🌛" : "🌞"
 }
 
-themeChannel.listen(key => {
-  if (key == "audio") {
-    audio = localAudio.get()
-    applyAudio()
-  } else if (key == "dark") {
-    dark = localDark.get() ?? defaultDark
-    applyDark()
-  }
-})
-
 let toggleContainer = document.createElement("div")
 toggleContainer.classList.add("theme-toggle-container")
-toggleContainer.append(darkToggle, audioToggle)
+toggleContainer.append(darkToggle)
 
 document.querySelector("footer")!.prepend(toggleContainer)
-
-export function initUI() {
-  applyAudio()
-  applyDark()
-}
 
 let toast = document.createElement("div")
 toast.classList.add("toast")

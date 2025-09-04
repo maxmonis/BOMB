@@ -1,7 +1,4 @@
-class Channel<
-  K extends "theme",
-  T extends K extends "theme" ? "audio" | "dark" : never
-> {
+class Channel<K extends "dark", T extends K extends "dark" ? boolean : never> {
   private readonly channel: BroadcastChannel
   constructor(key: K) {
     this.channel = new BroadcastChannel(key)
@@ -16,15 +13,11 @@ class Channel<
   }
 }
 
-export let themeChannel = new Channel("theme")
+export let darkChannel = new Channel("dark")
 
 class LocalStorage<
-  K extends "audio" | "dark" | "token",
-  T extends K extends "audio" | "dark"
-    ? boolean
-    : K extends "token"
-      ? string
-      : never
+  K extends "dark" | "token",
+  T extends K extends "dark" ? boolean : K extends "token" ? string : never
 > {
   private readonly key: K
   constructor(key: K) {
@@ -42,7 +35,6 @@ class LocalStorage<
   }
 }
 
-export let localAudio = new LocalStorage("audio")
 export let localDark = new LocalStorage("dark")
 export let localToken = new LocalStorage("token")
 
