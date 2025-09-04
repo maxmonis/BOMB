@@ -20,12 +20,7 @@ export let themeChannel = new Channel("theme")
 
 class Emitter<
   K extends "game",
-  T extends K extends "game"
-    ?
-        | { key: "leave_game" }
-        | { key: "mark_answer_incorrect" }
-        | { key: "start_game" }
-    : never
+  T extends K extends "game" ? { key: "mark_answer_incorrect" } : never
 > {
   private readonly key: `CustomEvent:${K}`
   constructor(key: K) {

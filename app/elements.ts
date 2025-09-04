@@ -30,22 +30,6 @@ circle.setAttribute("stroke-linecap", "round")
 circle.setAttribute("stroke-width", "12")
 spinner.append(rect, circle)
 
-// -------------------- Waiting Room --------------------
-export let gameSubtitle = document.createElement("h2")
-export let waitingRoom = document.createElement("div")
-let playerListContainer = document.createElement("div")
-gameSubtitle.textContent = "Current Players"
-export let admittedPlayerList = document.createElement("ul")
-playerListContainer.append(gameSubtitle, admittedPlayerList)
-export let pendingPlayerList = document.createElement("ul")
-waitingRoom.append(playerListContainer, pendingPlayerList)
-
-export let startGameButton = document.createElement("button")
-startGameButton.textContent = "Start Game"
-startGameButton.addEventListener("click", () => {
-  gameEmitter.post({ key: "start_game" })
-})
-
 // -------------------- Active Game --------------------
 export let gameStateContainer = document.createElement("div")
 export let scoreContainer = document.createElement("ul")
@@ -89,40 +73,3 @@ answerValidatorDialogContent.append(
   answerValidatorDialogButtons
 )
 answerValidatorDialog.append(answerValidatorDialogContent)
-
-// -------------------- Leave Game Dialog --------------------
-let leaveGameDialog = document.createElement("dialog")
-leaveGameDialog.classList.add("validator-dialog")
-let leaveGameDialogContent = document.createElement("div")
-let leaveGameDialogTitle = document.createElement("h1")
-leaveGameDialogTitle.textContent = "Leave Game?"
-let leaveGameDialogButtons = document.createElement("div")
-leaveGameDialogButtons.classList.add("dialog-button-container")
-let stayInGameButton = document.createElement("button")
-stayInGameButton.textContent = "No, continue playing"
-stayInGameButton.autofocus = true
-stayInGameButton.addEventListener("click", () => {
-  leaveGameDialog.close()
-  leaveGameDialog.remove()
-})
-let leaveGameButton = document.createElement("button")
-leaveGameButton.classList.add("red-text")
-leaveGameButton.textContent = "Yes, permanently leave"
-leaveGameButton.addEventListener("click", () => {
-  gameEmitter.post({ key: "leave_game" })
-  leaveGameDialog.close()
-  leaveGameDialog.remove()
-})
-leaveGameDialogButtons.append(stayInGameButton, leaveGameButton)
-leaveGameDialog.addEventListener("click", e => {
-  if (e.target == leaveGameDialog) leaveGameDialog.close()
-})
-leaveGameDialogContent.append(leaveGameDialogTitle, leaveGameDialogButtons)
-leaveGameDialog.append(leaveGameDialogContent)
-export let leaveGameDialogButton = document.createElement("button")
-leaveGameDialogButton.textContent = "Leave Game"
-leaveGameDialogButton.classList.add("red-text")
-leaveGameDialogButton.addEventListener("click", () => {
-  document.body.append(leaveGameDialog)
-  leaveGameDialog.showModal()
-})

@@ -4,26 +4,20 @@ import { hasChars } from "../lib/utils"
 import "../style/global.css"
 import { callAPI, gameEmitter, localToken } from "./client"
 import {
-  admittedPlayerList,
   answerValidator,
   answerValidatorDialog,
   answerValidatorDialogTitle,
   challengeContainer,
   gameStateContainer,
-  gameSubtitle,
   giveUpContainer,
-  leaveGameDialogButton,
   lineBreak,
   main,
   pageTitle,
-  pendingPlayerList,
   roundsContainer,
   scoreContainer,
   searchContainer,
   spinner,
-  startGameButton,
-  validAnswerButton,
-  waitingRoom
+  validAnswerButton
 } from "./elements"
 import { initUI, showToast } from "./ui"
 
@@ -58,6 +52,8 @@ function init() {
   ws.onmessage = event => {
     let res: SocketResponse = JSON.parse(event.data)
 
+    pageContent.innerHTML = ""
+
     // -------------------- Token --------------------
     if (res.key == "token") {
       localToken.set(res.token)
@@ -75,6 +71,7 @@ function init() {
       let isCreator = userId == creator.id
 
       pageTitle.textContent = isCreator ? "Your Game" : `${creator.name}'s Game`
+      let gameSubtitle = document.createElement("h2")
 
       // -------------------- Active Game --------------------
       if (res.game.started) {
@@ -355,41 +352,60 @@ function init() {
           roundsContainer.append(lineBreak, previousRoundContainer)
         }
 
-        gameStateContainer.append(roundsContainer, leaveGameDialogButton)
+        gameStateContainer.append(roundsContainer, getLeaveGameButton())
       }
 
       // -------------------- Pending Game --------------------
       else {
-        if (!pageContent.contains(waitingRoom)) {
-          pageContent.innerHTML = ""
-          pageContent.append(waitingRoom)
-        }
+        let waitingRoom = document.createElement("div")
+        waitingRoom.classList.add("waiting-room")
+
+        let waitingRoomTitle = document.createElement("h2")
+        waitingRoom.append(waitingRoomTitle)
+
+        pageContent.innerHTML = ""
+        pageContent.append(waitingRoom)
+
+        let pending = res.game.players.some(p => p.id == userId && p.pending)
 
         let pendingText = document.createElement("p")
 
-        if (res.game.players.some(p => p.id == userId && p.pending)) {
-          pageTitle.textContent = "Awaiting Response..."
+        if (pending) {
+          waitingRoomTitle.textContent = "Awaiting Response..."
+
           pendingText.textContent =
             "Your join request has been submitted and you will be " +
             "notified when the host accepts or rejects your request."
+
           waitingRoom.append(pendingText)
-        } else if (!isCreator) {
+        } else waitingRoomTitle.textContent = "Players"
+
+        let playerListContainer = document.createElement("div")
+
+        let playerList = document.createElement("ul")
+        playerListContainer.append(waitingRoomTitle, playerList)
+        if (!pending) waitingRoom.append(playerListContainer)
+        if (!pending && !isCreator) {
           pendingText.textContent = "Waiting for the host to start the game..."
           waitingRoom.append(pendingText)
         }
 
-        waitingRoom.append(leaveGameDialogButton)
-
-        admittedPlayerList.innerHTML = ""
         let admittedPlayers = res.game.players.flatMap(p => {
           if (p.pending) return []
           let li = document.createElement("li")
-          li.textContent = p.name
+
+          let name = document.createElement("span")
+          name.textContent = p.name
+
+          let check = document.createElement("span")
+          check.textContent = "✅"
+          check.style.fontSize = "1.25rem"
+
+          li.append(name, check)
+
           return li
         })
-        admittedPlayerList.append(...admittedPlayers)
-
-        if (!isCreator) return
+        playerList.append(...admittedPlayers)
 
         let pendingPlayers = res.game.players.flatMap(p => {
           if (!p.pending) return []
@@ -406,12 +422,13 @@ function init() {
           let buttons = document.createElement("div")
           let rejectButton = document.createElement("button")
           rejectButton.textContent = "Reject"
+          rejectButton.classList.add("red-text")
           rejectButton.addEventListener("click", () => {
             sendRequest(ws, { key: "deny_join_request", userId: p.id })
             li.remove()
           })
           let admitButton = document.createElement("button")
-          admitButton.textContent = "Admit"
+          admitButton.textContent = "Admit to Game"
           admitButton.addEventListener("click", () => {
             sendRequest(ws, { key: "accept_join_request", userId: p.id })
             li.remove()
@@ -423,11 +440,28 @@ function init() {
           return li
         })
 
-        pendingPlayerList.innerHTML = ""
-        if (pendingPlayers.length) pendingPlayerList.append(...pendingPlayers)
+        playerList.append(...pendingPlayers)
 
-        if (admittedPlayers.length > 1 && !main.contains(startGameButton))
-          pendingPlayerList.after(startGameButton)
+        if (isCreator) {
+          if (pendingPlayers.length)
+            waitingRoomTitle.textContent += ` (${pendingPlayers.length} pending)`
+
+          if (admittedPlayers.length > 1) {
+            let startGameButton = document.createElement("button")
+            startGameButton.classList.add("btn")
+            startGameButton.textContent = "Start Game"
+            startGameButton.addEventListener("click", () => {
+              sendRequest(ws, { key: "start_game" })
+            })
+            waitingRoom.append(startGameButton)
+          } else {
+            pendingText.textContent =
+              "Waiting for more players to be admitted..."
+            waitingRoom.append(pendingText)
+          }
+        }
+
+        waitingRoom.append(getLeaveGameButton())
       }
     }
 
@@ -453,19 +487,68 @@ function init() {
   }
 
   gameEmitter.listen(data => {
-    if (data.key == "start_game") sendRequest(ws, data)
-    else if (data.key == "mark_answer_incorrect") sendRequest(ws, data)
-    else if (data.key == "leave_game") {
-      sendRequest(ws, { key: "leave_game" })
+    if (data.key == "mark_answer_incorrect") sendRequest(ws, data)
+  })
+
+  function getLeaveGameButton() {
+    let leaveGameDialog = document.createElement("dialog")
+    let leaveGameDialogContent = document.createElement("div")
+
+    let leaveGameDialogTitle = document.createElement("h1")
+    leaveGameDialogTitle.textContent = "Leave Game?"
+
+    let leaveGameDialogButtons = document.createElement("div")
+    leaveGameDialogButtons.classList.add("dialog-button-container")
+
+    let stayInGameButton = document.createElement("button")
+    stayInGameButton.textContent = "No, stay in game"
+    stayInGameButton.type = "button"
+    stayInGameButton.autofocus = true
+    stayInGameButton.addEventListener("click", () => {
+      leaveGameDialog.close()
+      leaveGameDialog.remove()
+    })
+
+    let leaveGameButton = document.createElement("button")
+    leaveGameButton.classList.add("red-text")
+    leaveGameButton.textContent = "Yes, permanently leave"
+    leaveGameButton.type = "button"
+    leaveGameButton.addEventListener("click", () => {
+      pageContent.innerHTML = ""
+      pendingGameId = null
       localToken.remove()
+
+      sendRequest(ws, { key: "leave_game" })
       ws.close()
       init()
-    }
-  })
+
+      leaveGameDialog.close()
+      leaveGameDialog.remove()
+    })
+
+    leaveGameDialogButtons.append(stayInGameButton, leaveGameButton)
+
+    leaveGameDialog.addEventListener("click", e => {
+      if (e.target == leaveGameDialog) leaveGameDialog.close()
+    })
+
+    leaveGameDialogContent.append(leaveGameDialogTitle, leaveGameDialogButtons)
+
+    leaveGameDialog.append(leaveGameDialogContent)
+
+    let leaveGameDialogButton = document.createElement("button")
+    leaveGameDialogButton.textContent = "Leave Game"
+    leaveGameDialogButton.classList.add("red-text")
+    leaveGameDialogButton.addEventListener("click", () => {
+      document.body.append(leaveGameDialog)
+      leaveGameDialog.showModal()
+    })
+
+    return leaveGameDialogButton
+  }
 
   function renderLobby() {
     pageTitle.textContent = "Lobby"
-    pageContent.innerHTML = ""
 
     let lobby = document.createElement("div")
     lobby.classList.add("lobby")
@@ -614,6 +697,7 @@ function init() {
       availableGames.length ? availableGamesList : emptyGamesText
     )
 
+    pageContent.innerHTML = ""
     pageContent.append(lobby)
   }
 }
