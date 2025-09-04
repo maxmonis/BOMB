@@ -62,6 +62,14 @@ export async function callAPI<T>(
   throw value
 }
 
+export function createWebSocket(token: string | null) {
+  return new WebSocket(
+    `${location.protocol.replace("http", "ws")}//${location.host}/ws${
+      token ? `?token=${token}` : ""
+    }`
+  )
+}
+
 function getTokenPayload(value: unknown): unknown {
   if (!hasChars(value)) return null
 
@@ -88,4 +96,10 @@ export function getUserIdFromToken(token: unknown) {
 
 export function sendRequest(ws: WebSocket, req: SocketRequest) {
   if (ws.readyState == WebSocket.OPEN) ws.send(JSON.stringify(req))
+}
+
+export function wrapLabel(text: string, input: HTMLElement) {
+  let label = document.createElement("label")
+  label.append(text, input)
+  return label
 }

@@ -1,0 +1,300 @@
+import type { Page } from "../../api/routes/search"
+import type { SocketResponse } from "../../api/ws"
+import { hasChars } from "../../lib/utils"
+import { callAPI, sendRequest, wrapLabel } from "../client"
+import { lineBreak, pageContent, pageTitle, spinner } from "../elements"
+import { createLeaveGameDialog } from "./leaveGameDialog"
+
+export function renderActiveGame(
+  ws: WebSocket,
+  game: ActiveGame,
+  userId: string
+) {
+  let creator = game.players[0]!
+  let isCreator = userId == creator.id
+
+  pageTitle.textContent = isCreator ? "Your Game" : `${creator.name}'s Game`
+  pageContent.innerHTML = ""
+
+  let gameSubtitle = document.createElement("h2")
+  let scoreContainer = createScoreboard(game)
+  pageContent.append(scoreContainer, gameSubtitle)
+
+  let currentRound = game.rounds[0]!
+  let previousRounds = game.rounds.slice(1)
+  let previousAnswer = currentRound.at(-1)
+  let allAnswers = game.rounds.flatMap(r => r)
+
+  let { status } = game.players.find(p => p.id == userId)!
+
+  // -------------------- Active or Challenged --------------------
+  if (status == "active" || status == "challenged") {
+    gameSubtitle.textContent = `Name ${
+      previousAnswer && "releaseYear" in previousAnswer
+        ? `an actor from ${previousAnswer.title} (${previousAnswer.releaseYear})`
+        : `a movie${previousAnswer ? ` starring ${previousAnswer.title}` : ""}`
+    }`
+
+    renderSearchForm(ws, allAnswers, previousAnswer)
+
+    // -------------------- Active --------------------
+    if (status == "active") {
+      pageTitle.textContent = "It's your turn!"
+
+      if (previousAnswer) {
+        let challengeButton = document.createElement("button")
+        challengeButton.textContent = "Challenge Previous Player"
+        challengeButton.classList.add("red-text")
+        challengeButton.addEventListener("click", () => {
+          sendRequest(ws, { key: "challenge" })
+        })
+
+        let challengeContainer = document.createElement("div")
+        let text = document.createElement("p")
+        text.textContent = "Can't think of anything?"
+        challengeContainer.append(text, challengeButton)
+        pageContent.append(challengeContainer)
+      }
+
+      renderValidateAnswerDialog(ws, currentRound, false)
+
+      // -------------------- Challenged --------------------
+    } else {
+      pageTitle.textContent = "You've been challenged!"
+
+      let giveUpButton = document.createElement("button")
+      giveUpButton.textContent = "Give Up"
+      giveUpButton.classList.add("red-text")
+      giveUpButton.addEventListener("click", () =>
+        sendRequest(ws, { key: "give_up" })
+      )
+      pageContent.append("Can't think of anything?", giveUpButton)
+    }
+
+    // -------------------- Reviewing --------------------
+  } else if (status == "reviewing") {
+    pageTitle.textContent = "Your challenge was answered!"
+    gameSubtitle.textContent = "Is this response correct?"
+    renderValidateAnswerDialog(ws, currentRound, true)
+
+    // -------------------- Idle --------------------
+  } else {
+    let challenged = game.players.find(p => p.status == "challenged")
+    gameSubtitle.textContent = challenged
+      ? `${challenged.name} has been challenged!`
+      : `${game.players.find(p => p.status)!.name} is thinking...`
+  }
+
+  let active = game.players.filter(p => p.letters < 4)
+  let winner = active.length == 1 ? active[0]! : null
+  if (winner)
+    gameSubtitle.textContent =
+      winner.id == userId
+        ? "Congratulations, you're the winner!"
+        : `${winner.name} wins. Better luck next time!`
+
+  pageContent.append(
+    createRounds(currentRound, previousRounds),
+    createLeaveGameDialog(ws)
+  )
+}
+
+function renderValidateAnswerDialog(
+  ws: WebSocket,
+  currentRound: Array<Page>,
+  reviewingChallengeResponse: boolean
+) {
+  let previousAnswer = currentRound.at(-1)
+  let priorAnswer = currentRound.at(-2)
+
+  let { actor, movie } =
+    priorAnswer && "releaseYear" in priorAnswer
+      ? { actor: previousAnswer, movie: priorAnswer }
+      : previousAnswer && "releaseYear" in previousAnswer
+        ? { actor: priorAnswer, movie: previousAnswer }
+        : { actor: null, movie: null }
+
+  if (!actor || !movie) return
+
+  let dialog = document.createElement("dialog")
+  dialog.classList.add("validator-dialog")
+  dialog.addEventListener("click", e => {
+    if (e.target == dialog) dialog.close()
+  })
+
+  let query = `was ${actor.title} in ${movie.title} (${movie.releaseYear})?`
+
+  let title = document.createElement("h1")
+  title.textContent = `So, ${query}`
+
+  let valid = document.createElement("button")
+  valid.textContent = "Yes, it was a valid answer"
+  valid.autofocus = true
+  valid.addEventListener("click", () => {
+    if (reviewingChallengeResponse)
+      sendRequest(ws, { key: "mark_answer_correct" })
+    dialog.close()
+    dialog.remove()
+  })
+
+  let invalid = document.createElement("button")
+  invalid.classList.add("red-text")
+  invalid.textContent = "No, give the previous player a letter"
+  invalid.addEventListener("click", () => {
+    sendRequest(ws, { key: "mark_answer_incorrect" })
+    dialog.close()
+    dialog.remove()
+  })
+
+  let buttons = document.createElement("div")
+  buttons.classList.add("dialog-button-container")
+  buttons.append(valid, invalid)
+
+  let content = document.createElement("div")
+  content.append(title, buttons)
+  dialog.append(content)
+
+  let link = document.createElement("a")
+  link.textContent = `Search "${query}"`
+  link.setAttribute("target", "_blank")
+  link.setAttribute("rel", "noopener")
+  link.setAttribute("href", `https://www.google.com/search?q=${query}`)
+  link.addEventListener("click", () => {
+    document.body.append(dialog)
+    dialog.showModal()
+  })
+
+  let container = document.createElement("div")
+  container.append(link)
+  if (!reviewingChallengeResponse) {
+    let text = document.createElement("p")
+    text.textContent = "Think the previous answer was incorrect?"
+    container.prepend(text)
+  }
+  pageContent.append(container)
+}
+
+function createScoreboard(game: ActiveGame) {
+  let ul = document.createElement("ul")
+  ul.classList.add("score-container")
+
+  ul.append(
+    ...game.players.map(p => {
+      let li = document.createElement("li")
+      let name = document.createElement("span")
+      name.textContent = p.name
+
+      let letters = document.createElement("div")
+      letters.append(
+        ..."BOMB".split("").map((letter, i) => {
+          let span = document.createElement("span")
+          span.textContent = letter
+          if (p.letters > i) span.classList.add("red-text")
+          return span
+        })
+      )
+
+      li.append(name, letters)
+      return li
+    })
+  )
+
+  return ul
+}
+
+function createRounds(current: Array<Page>, previous: Array<Array<Page>>) {
+  let container = document.createElement("ol")
+
+  if (current.length) {
+    let text = document.createElement("p")
+    text.innerHTML = current.map(p => p.title).join(" → ")
+    container.append("Current round:", lineBreak, text)
+  }
+
+  if (previous.length) {
+    let list = document.createElement("div")
+    list.append(
+      ...previous.map(round => {
+        let text = document.createElement("p")
+        text.innerHTML = round.map(p => p.title).join(" → ")
+        return text
+      })
+    )
+    container.append(lineBreak, "Previous rounds:", lineBreak, list)
+  }
+
+  return container
+}
+
+function renderSearchForm(
+  ws: WebSocket,
+  allAnswers: Array<Page>,
+  previousAnswer: Page | undefined
+) {
+  let container = document.createElement("div")
+  container.classList.add("search-container")
+
+  let input = document.createElement("input")
+  let results = document.createElement("ul")
+  let timeout: ReturnType<typeof setTimeout> | null = null
+
+  let category =
+    previousAnswer && "releaseYear" in previousAnswer ? "actor" : "movie"
+
+  input.addEventListener("input", () => {
+    if (timeout) clearTimeout(timeout)
+    timeout = setTimeout(async () => {
+      let query = input.value.trim()
+      results.innerHTML = ""
+      if (!hasChars(query, 3)) return
+      results.append(spinner)
+
+      let pages = await callAPI<Page[]>(`search/${category}?q=${query}`)
+
+      results.innerHTML = pages.length
+        ? ""
+        : "<p>No results, please try again</p>"
+
+      results.append(
+        ...pages.map(page => {
+          let li = document.createElement("li")
+
+          let text = document.createElement("div")
+          let title = document.createElement("span")
+          title.textContent = page.title.split(" (")[0]!
+          let year = document.createElement("small")
+          year.textContent =
+            "birthYear" in page
+              ? page.birthYear.toString()
+              : page.releaseYear.toString()
+          text.append(title, year)
+
+          if (allAnswers.some(a => a.pageid == page.pageid)) {
+            let check = document.createElement("span")
+            check.textContent = "✅"
+            li.append(text, check)
+            return li
+          }
+
+          let button = document.createElement("button")
+          button.textContent = "Select"
+          button.addEventListener("click", () => {
+            sendRequest(ws, { key: "play_move", page })
+            container.remove()
+          })
+
+          li.append(text, button)
+          return li
+        })
+      )
+    }, 500)
+  })
+
+  container.append(wrapLabel(`Search ${category}s`, input), results)
+  pageContent.append(container)
+}
+
+type ActiveGame = Extract<
+  Extract<SocketResponse, { key: "game_state" }>["game"],
+  { started: true }
+>

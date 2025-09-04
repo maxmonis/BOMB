@@ -116,7 +116,13 @@ export async function onConnection(
         if (game.rounds) throw "Game has already started"
 
         let socket = game.players.find(p => p.id == req.userId)?.socket
-        if (socket) sendResponse(socket, { key: "join_request_denied" })
+        if (socket) {
+          sendResponse(socket, {
+            key: "toast",
+            message: "Your join request was denied"
+          })
+          sendResponse(socket, { key: "invalid_token" })
+        }
 
         game.players = game.players.filter(p => p.id != req.userId)
         sendGameState(game)
@@ -128,8 +134,13 @@ export async function onConnection(
         if (game.rounds) throw "Game has already started"
 
         for (let p of game.players)
-          if (p.pending && p.socket)
-            sendResponse(p.socket, { key: "join_request_denied" })
+          if (p.pending && p.socket) {
+            sendResponse(p.socket, {
+              key: "toast",
+              message: "Your join request was denied"
+            })
+            sendResponse(p.socket, { key: "invalid_token" })
+          }
 
         game.players = game.players.filter(p => !p.pending)
         game.rounds = [[]]
@@ -140,6 +151,8 @@ export async function onConnection(
       else if (req.key == "leave_game") {
         if (!game || !gameId) throw "Game not found"
         if (!player) throw "Player not found"
+
+        if (player.socket) sendResponse(player.socket, { key: "invalid_token" })
 
         delete player.socket
 

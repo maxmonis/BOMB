@@ -1,5 +1,8 @@
 export let pageTitle = document.querySelector("h1")!
 
+export let pageContent = document.createElement("div")
+pageTitle.after(pageContent)
+
 export let lineBreak = document.createElement("br")
 export let spinner = document.createElementNS(
   "http://www.w3.org/2000/svg",
