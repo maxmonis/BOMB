@@ -73,11 +73,6 @@ export async function onConnection(
           throw "Game has already started"
         }
 
-        gameId = req.gameId
-
-        let token = await encrypt({ gameId, userId })
-        sendResponse(ws, { key: "token", token })
-
         player = {
           id: userId,
           message: req.message,
@@ -86,6 +81,11 @@ export async function onConnection(
           socket: ws
         }
         game.players.push(player)
+
+        gameId = req.gameId
+
+        let token = await encrypt({ gameId, userId })
+        sendResponse(ws, { key: "token", token })
 
         sendGameState(game)
       }
