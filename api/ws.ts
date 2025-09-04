@@ -19,18 +19,14 @@ export async function onConnection(
   let gameId = hasChars(tokenValues?.gameId) ? tokenValues.gameId : null
   let userId = hasChars(tokenValues?.userId) ? tokenValues.userId : ""
 
-  if (token && (!gameId || !userId)) sendResponse(ws, { key: "invalid_token" })
-
   let game = gameId ? games.get(gameId) : null
-  if (gameId && !game) sendResponse(ws, { key: "invalid_token" })
-
   let player = game && userId ? game.players.find(p => p.id == userId) : null
 
   if (game && player) {
     player.socket = ws
     sendResponse(ws, getGameState(game))
-  } else if (game) sendResponse(ws, { key: "invalid_token" })
-  else {
+  } else {
+    if (token) sendResponse(ws, { key: "invalid_token" })
     gameId = null
     userId = crypto.randomUUID()
     lobby.add(ws)
