@@ -1,3 +1,6 @@
+import type { SocketRequest } from "../api/ws"
+import { hasChars } from "../lib/utils"
+
 class Channel<K extends "dark", T extends K extends "dark" ? boolean : never> {
   private readonly channel: BroadcastChannel
   constructor(key: K) {
@@ -57,4 +60,32 @@ export async function callAPI<T>(
   if (res.status == 409 && value == "New version available, please reload page")
     window.location.reload()
   throw value
+}
+
+function getTokenPayload(value: unknown): unknown {
+  if (!hasChars(value)) return null
+
+  let [header, payload, signature] = value.split(".")
+  if (!header || !payload || !hasChars(signature)) return null
+
+  try {
+    JSON.parse(atob(header))
+    return JSON.parse(atob(payload))
+  } catch (error) {
+    return null
+  }
+}
+
+export function getUserIdFromToken(token: unknown) {
+  let tokenPayload = getTokenPayload(token)
+  return tokenPayload &&
+    typeof tokenPayload == "object" &&
+    "userId" in tokenPayload &&
+    hasChars(tokenPayload.userId)
+    ? tokenPayload.userId
+    : null
+}
+
+export function sendRequest(ws: WebSocket, req: SocketRequest) {
+  if (ws.readyState == WebSocket.OPEN) ws.send(JSON.stringify(req))
 }

@@ -1,8 +1,8 @@
 import type { Page } from "../api/routes/search"
-import type { SocketRequest, SocketResponse } from "../api/ws"
+import type { SocketResponse } from "../api/ws"
 import { hasChars } from "../lib/utils"
 import "../style/global.css"
-import { callAPI, localToken } from "./client"
+import { callAPI, getUserIdFromToken, localToken, sendRequest } from "./client"
 import { lineBreak, pageTitle, spinner } from "./elements"
 import { applyDark, showToast } from "./ui"
 
@@ -723,32 +723,4 @@ function init() {
     pageContent.innerHTML = ""
     pageContent.append(lobby)
   }
-}
-
-function getTokenPayload(value: unknown): unknown {
-  if (!hasChars(value)) return null
-
-  let [header, payload, signature] = value.split(".")
-  if (!header || !payload || !hasChars(signature)) return null
-
-  try {
-    JSON.parse(atob(header))
-    return JSON.parse(atob(payload))
-  } catch (error) {
-    return null
-  }
-}
-
-function getUserIdFromToken(token: unknown) {
-  let tokenPayload = getTokenPayload(token)
-  return tokenPayload &&
-    typeof tokenPayload == "object" &&
-    "userId" in tokenPayload &&
-    hasChars(tokenPayload.userId)
-    ? tokenPayload.userId
-    : null
-}
-
-function sendRequest(ws: WebSocket, req: SocketRequest) {
-  if (ws.readyState == WebSocket.OPEN) ws.send(JSON.stringify(req))
 }
