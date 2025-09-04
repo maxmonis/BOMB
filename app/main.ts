@@ -2,23 +2,8 @@ import { Page } from "../api/search"
 import type { SocketRequest, SocketResponse } from "../api/ws"
 import { hasChars } from "../lib/utils"
 import "../style/global.css"
-import { callAPI, gameEmitter, localToken } from "./client"
-import {
-  answerValidator,
-  answerValidatorDialog,
-  answerValidatorDialogTitle,
-  challengeContainer,
-  gameStateContainer,
-  giveUpContainer,
-  lineBreak,
-  main,
-  pageTitle,
-  roundsContainer,
-  scoreContainer,
-  searchContainer,
-  spinner,
-  validAnswerButton
-} from "./elements"
+import { callAPI, localToken } from "./client"
+import { lineBreak, pageTitle, spinner } from "./elements"
 import { initUI, showToast } from "./ui"
 
 if (location.pathname != "/") location.replace(location.origin)
@@ -75,10 +60,54 @@ function init() {
 
       // -------------------- Active Game --------------------
       if (res.game.started) {
-        if (!pageContent.contains(gameStateContainer)) {
-          pageContent.innerHTML = ""
-          pageContent.append(gameStateContainer)
-        }
+        let scoreContainer = document.createElement("ul")
+        scoreContainer.classList.add("score-container")
+
+        pageContent.append(scoreContainer, gameSubtitle)
+
+        let roundsContainer = document.createElement("ol")
+
+        let searchContainer = document.createElement("div")
+        searchContainer.classList.add("search-container")
+
+        let challengeContainer = document.createElement("div")
+        let answerValidator = document.createElement("div")
+        let giveUpContainer = document.createElement("div")
+
+        let answerValidatorDialog = document.createElement("dialog")
+        answerValidatorDialog.classList.add("validator-dialog")
+        let answerValidatorDialogContent = document.createElement("div")
+        let answerValidatorDialogTitle = document.createElement("h1")
+        let answerValidatorDialogButtons = document.createElement("div")
+        answerValidatorDialogButtons.classList.add("dialog-button-container")
+        let validAnswerButton = document.createElement("button")
+        validAnswerButton.textContent = "Yes, it was a valid answer"
+        validAnswerButton.autofocus = true
+        validAnswerButton.addEventListener("click", () => {
+          answerValidatorDialog.close()
+          answerValidatorDialog.remove()
+        })
+        let invalidAnswerButton = document.createElement("button")
+        invalidAnswerButton.classList.add("red-text")
+        invalidAnswerButton.textContent =
+          "No, give the previous player a letter"
+        invalidAnswerButton.addEventListener("click", () => {
+          sendRequest(ws, { key: "mark_answer_incorrect" })
+          answerValidatorDialog.close()
+          answerValidatorDialog.remove()
+        })
+        answerValidatorDialogButtons.append(
+          validAnswerButton,
+          invalidAnswerButton
+        )
+        answerValidatorDialog.addEventListener("click", e => {
+          if (e.target == answerValidatorDialog) answerValidatorDialog.close()
+        })
+        answerValidatorDialogContent.append(
+          answerValidatorDialogTitle,
+          answerValidatorDialogButtons
+        )
+        answerValidatorDialog.append(answerValidatorDialogContent)
 
         scoreContainer.innerHTML = ""
         scoreContainer.append(
@@ -99,8 +128,6 @@ function init() {
             return li
           })
         )
-
-        if (!main.contains(gameSubtitle)) scoreContainer.after(gameSubtitle)
 
         let player = res.game.players.find(p => p.id == userId)!
         let status = player.status
@@ -175,7 +202,7 @@ function init() {
             }, 600)
           })
           searchContainer.append(searchLabel, searchResults)
-          gameStateContainer.append(searchContainer)
+          pageContent.append(searchContainer)
 
           if (previousAnswer)
             gameSubtitle.textContent += ` ${
@@ -236,7 +263,7 @@ function init() {
               searchLink
             )
 
-            gameStateContainer.append(answerValidator)
+            pageContent.append(answerValidator)
           }
         }
 
@@ -251,7 +278,7 @@ function init() {
             sendRequest(ws, { key: "give_up" })
           })
           giveUpContainer.append("Can't think of anything?", giveUpButton)
-          gameStateContainer.append(giveUpContainer)
+          pageContent.append(giveUpContainer)
         }
 
         // -------------------- You're Reviewing --------------------
@@ -291,7 +318,7 @@ function init() {
             answerValidator.innerHTML = ""
             answerValidator.append(searchLink)
 
-            gameStateContainer.append(answerValidator)
+            pageContent.append(answerValidator)
           }
         }
 
@@ -352,7 +379,7 @@ function init() {
           roundsContainer.append(lineBreak, previousRoundContainer)
         }
 
-        gameStateContainer.append(roundsContainer, getLeaveGameButton())
+        pageContent.append(roundsContainer, getLeaveGameButton())
       }
 
       // -------------------- Pending Game --------------------
@@ -485,10 +512,6 @@ function init() {
     // -------------------- Error --------------------
     else if (res.key == "error") showToast(`Error: ${res.message}`)
   }
-
-  gameEmitter.listen(data => {
-    if (data.key == "mark_answer_incorrect") sendRequest(ws, data)
-  })
 
   function getLeaveGameButton() {
     let leaveGameDialog = document.createElement("dialog")

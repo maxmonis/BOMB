@@ -18,27 +18,6 @@ class Channel<
 
 export let themeChannel = new Channel("theme")
 
-class Emitter<
-  K extends "game",
-  T extends K extends "game" ? { key: "mark_answer_incorrect" } : never
-> {
-  private readonly key: `CustomEvent:${K}`
-  constructor(key: K) {
-    this.key = `CustomEvent:${key}`
-  }
-  post(data: T) {
-    document.dispatchEvent(new CustomEvent(this.key, { detail: { data } }))
-  }
-  listen(callback: (data: T) => void) {
-    document.addEventListener(this.key, event => {
-      let customEvent = event as CustomEvent
-      callback(customEvent.detail.data)
-    })
-  }
-}
-
-export let gameEmitter = new Emitter("game")
-
 class LocalStorage<
   K extends "audio" | "dark" | "token",
   T extends K extends "audio" | "dark"
