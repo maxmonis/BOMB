@@ -1,6 +1,6 @@
 import { Router } from "express"
-import { hasChars } from "../lib/utils"
-import { authToken } from "./middleware"
+import { hasChars } from "../../lib/utils"
+import { authToken } from "../middleware"
 
 export let searchRoute = Router()
 

@@ -1,4 +1,4 @@
-import { Page } from "../api/search"
+import type { Page } from "../api/routes/search"
 import type { SocketRequest, SocketResponse } from "../api/ws"
 import { hasChars } from "../lib/utils"
 import "../style/global.css"

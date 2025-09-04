@@ -6,7 +6,7 @@ import helmet from "helmet"
 import { createServer } from "http"
 import { WebSocketServer } from "ws"
 import { maxRequests, packageVersion } from "./middleware"
-import { searchRoute } from "./search"
+import { searchRoute } from "./routes/search"
 import { onConnection } from "./ws"
 
 config()

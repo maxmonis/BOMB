@@ -2,7 +2,7 @@ import type { IncomingMessage } from "http"
 import { WebSocket } from "ws"
 import { hasChars } from "../lib/utils"
 import { decrypt, encrypt } from "./jose"
-import type { Page } from "./search"
+import type { Page } from "./routes/search"
 
 let lobby = new Set<Socket>()
 export let games = new Map<string, Game>()
