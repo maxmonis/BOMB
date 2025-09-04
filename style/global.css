@@ -26,7 +26,7 @@ button {
 
 button {
   border: none;
-  background: inherit;
+  background: none;
   cursor: pointer;
   font-size: inherit;
   padding: 0;
@@ -204,7 +204,6 @@ dialog h1 {
 
 .score-container li {
   align-items: center;
-  background-color: color-mix(in oklab, var(--gray) 20%, transparent);
   border-radius: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -253,4 +252,46 @@ dialog h1 {
 .search-container ul li > div:first-child {
   display: flex;
   flex-direction: column;
+}
+
+.game-action-container {
+  border-radius: 0.75rem;
+  margin-block: 0.75rem;
+  padding: 0.5rem 1.25rem;
+  text-align: center;
+}
+
+.game-rounds {
+  border-radius: 1rem;
+  margin-block: 1.25rem;
+  padding: 1.25rem;
+  position: relative;
+}
+
+.game-rounds p:not(:last-child) {
+  border-block-end: 1px solid color-mix(in oklab, var(--slate) 50%, transparent);
+  margin-block-end: 0.75rem;
+  padding-block: 0.5rem;
+}
+
+.score-container li,
+.game-action-container,
+.game-rounds {
+  background-color: color-mix(in oklab, var(--gray) 10%, transparent);
+  position: relative;
+}
+
+.score-container li::before,
+.game-action-container::before,
+.game-rounds::before {
+  background: radial-gradient(
+    circle at top right,
+    color-mix(in oklab, var(--gray) 15%, transparent),
+    transparent 70%
+  );
+  border-radius: inherit;
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
 }

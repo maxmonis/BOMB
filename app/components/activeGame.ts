@@ -2,7 +2,7 @@ import type { Page } from "../../api/routes/search"
 import type { SocketResponse } from "../../api/ws"
 import { hasChars } from "../../lib/utils"
 import { callAPI, sendRequest, wrapLabel } from "../client"
-import { lineBreak, pageContent, pageTitle, spinner } from "../elements"
+import { pageContent, pageTitle, spinner } from "../elements"
 import { createLeaveGameDialog } from "./leaveGameDialog"
 
 export function renderActiveGame(
@@ -42,6 +42,12 @@ export function renderActiveGame(
       pageTitle.textContent = "It's your turn!"
 
       if (previousAnswer) {
+        let challengeContainer = document.createElement("div")
+        challengeContainer.classList.add("game-action-container")
+
+        let text = document.createElement("p")
+        text.textContent = "Can't think of anything?"
+
         let challengeButton = document.createElement("button")
         challengeButton.textContent = "Challenge Previous Player"
         challengeButton.classList.add("red-text")
@@ -49,9 +55,6 @@ export function renderActiveGame(
           sendRequest(ws, { key: "challenge" })
         })
 
-        let challengeContainer = document.createElement("div")
-        let text = document.createElement("p")
-        text.textContent = "Can't think of anything?"
         challengeContainer.append(text, challengeButton)
         pageContent.append(challengeContainer)
       }
@@ -62,13 +65,21 @@ export function renderActiveGame(
     } else {
       pageTitle.textContent = "You've been challenged!"
 
+      let giveUpContainer = document.createElement("div")
+      giveUpContainer.classList.add("game-action-container")
+
+      let text = document.createElement("p")
+      text.textContent = "Can't think of anything?"
+
       let giveUpButton = document.createElement("button")
       giveUpButton.textContent = "Give Up"
       giveUpButton.classList.add("red-text")
       giveUpButton.addEventListener("click", () =>
         sendRequest(ws, { key: "give_up" })
       )
-      pageContent.append("Can't think of anything?", giveUpButton)
+
+      giveUpContainer.append(text, giveUpButton)
+      pageContent.append(giveUpContainer)
     }
 
     // -------------------- Reviewing --------------------
@@ -165,6 +176,7 @@ function renderValidateAnswerDialog(
   })
 
   let container = document.createElement("div")
+  container.classList.add("game-action-container")
   container.append(link)
   if (!reviewingChallengeResponse) {
     let text = document.createElement("p")
@@ -203,12 +215,13 @@ function createScoreboard(game: ActiveGame) {
 }
 
 function createRounds(current: Array<Page>, previous: Array<Array<Page>>) {
-  let container = document.createElement("ol")
+  let container = document.createElement("div")
+  container.classList.add("game-rounds")
 
   if (current.length) {
     let text = document.createElement("p")
     text.innerHTML = current.map(p => p.title).join(" → ")
-    container.append("Current round:", lineBreak, text)
+    container.append("Current round:", text)
   }
 
   if (previous.length) {
@@ -220,7 +233,7 @@ function createRounds(current: Array<Page>, previous: Array<Array<Page>>) {
         return text
       })
     )
-    container.append(lineBreak, "Previous rounds:", lineBreak, list)
+    container.append("Previous rounds:", list)
   }
 
   return container
