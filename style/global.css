@@ -10,6 +10,7 @@ footer > div:first-child {
 ol,
 ul {
   list-style: none;
+  margin: 0;
   padding: 0;
 }
 
@@ -154,6 +155,34 @@ dialog h1 {
   }
 }
 
+.lobby .btn {
+  margin-block: 0.5rem 1.25rem;
+}
+
+.lobby ul {
+  border-block-start: 1px solid var(--slate);
+}
+
+.lobby ul li {
+  align-items: center;
+  border-block-end: 1px solid var(--slate);
+  display: flex;
+  gap: 1.25rem;
+  justify-content: space-between;
+  padding-block: 0.25rem;
+}
+
+.lobby ul li span {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.request-to-join-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .score-container {
   align-items: center;
   display: flex;
@@ -175,9 +204,18 @@ dialog h1 {
 .score-container li > span:first-child {
   font-size: 1.125rem;
 }
+
 .score-container li > div {
   font-size: 1.375rem;
   font-weight: 700;
+}
+
+.btn {
+  background-color: var(--bg-blue);
+  border-radius: 0.75rem;
+  color: var(--light);
+  font-weight: 600;
+  padding: 0.5rem 1rem;
 }
 
 .red-text {

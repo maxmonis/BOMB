@@ -8,20 +8,15 @@ import {
   answerValidator,
   answerValidatorDialog,
   answerValidatorDialogTitle,
-  availableGamesList,
   challengeContainer,
   gameStateContainer,
   gameSubtitle,
   giveUpContainer,
-  joinRequestForm,
   leaveGameDialogButton,
   lineBreak,
-  lobbyContainer,
   main,
-  pageContent,
   pageTitle,
   pendingPlayerList,
-  pendingText,
   roundsContainer,
   scoreContainer,
   searchContainer,
@@ -48,9 +43,11 @@ function init() {
     )}//${location.host}/ws${token ? `?token=${token}` : ""}`
   )
 
+  let availableGames: Array<{ creatorName: string; id: string }> = []
   let pendingGameId: string | null = null
 
-  pageContent.innerHTML = ""
+  let pageContent = document.createElement("div")
+  pageTitle.after(pageContent)
 
   ws.onerror = () => {
     localToken.remove()
@@ -368,6 +365,8 @@ function init() {
           pageContent.append(waitingRoom)
         }
 
+        let pendingText = document.createElement("p")
+
         if (res.game.players.some(p => p.id == userId && p.pending)) {
           pageTitle.textContent = "Awaiting Response..."
           pendingText.textContent =
@@ -377,7 +376,7 @@ function init() {
         } else if (!isCreator) {
           pendingText.textContent = "Waiting for the host to start the game..."
           waitingRoom.append(pendingText)
-        } else pendingText.remove()
+        }
 
         waitingRoom.append(leaveGameDialogButton)
 
@@ -434,43 +433,13 @@ function init() {
 
     // -------------------- Available Games --------------------
     else if (res.key == "available_games") {
-      if (!pageContent.contains(lobbyContainer)) {
-        pageContent.innerHTML = ""
-        pageContent.append(lobbyContainer)
-      }
+      availableGames = res.games
 
-      availableGamesList.innerHTML = ""
-      if (res.games.length == 0) {
-        availableGamesList.innerHTML = "<p>No available games</p>"
-        return
-      }
-
-      availableGamesList.append(
-        ...res.games.map(game => {
-          let gameName = `${game.creatorName}'s Game`
-
-          let li = document.createElement("li")
-
-          let button = document.createElement("button")
-          button.textContent = "Request to Join"
-
-          button.addEventListener("click", () => {
-            lobbyContainer.remove()
-            pageTitle.textContent = `Request to Join ${gameName}`
-            pageTitle.after(joinRequestForm)
-            pendingGameId = game.id
-          })
-
-          li.append(gameName, button)
-          return li
-        })
-      )
+      if (!pendingGameId) renderLobby()
     }
 
     // -------------------- Join Request Denied --------------------
     else if (res.key == "join_request_denied") {
-      waitingRoom.remove()
-      pendingText.remove()
       showToast("Your join request was denied")
       localToken.remove()
       ws.close()
@@ -484,18 +453,169 @@ function init() {
   }
 
   gameEmitter.listen(data => {
-    if (data.key == "create_game") sendRequest(ws, data)
-    else if (data.key == "start_game") sendRequest(ws, data)
+    if (data.key == "start_game") sendRequest(ws, data)
     else if (data.key == "mark_answer_incorrect") sendRequest(ws, data)
     else if (data.key == "leave_game") {
       sendRequest(ws, { key: "leave_game" })
       localToken.remove()
       ws.close()
       init()
-    } else if (data.key == "request_to_join") {
-      if (pendingGameId) sendRequest(ws, { ...data, gameId: pendingGameId })
     }
   })
+
+  function renderLobby() {
+    pageTitle.textContent = "Lobby"
+    pageContent.innerHTML = ""
+
+    let lobby = document.createElement("div")
+    lobby.classList.add("lobby")
+
+    let createGameTitle = document.createElement("h2")
+    createGameTitle.textContent = "Create New Game"
+
+    let createGameForm = document.createElement("form")
+
+    let createGameInput = document.createElement("input")
+    createGameInput.required = true
+    createGameInput.maxLength = 20
+
+    let createGameLabel = document.createElement("label")
+    createGameLabel.append("Your name", createGameInput)
+
+    let createGameButton = document.createElement("button")
+    createGameButton.classList.add("btn")
+    createGameButton.textContent = "Create Game"
+    createGameButton.type = "submit"
+
+    createGameForm.append(createGameLabel, createGameButton)
+
+    createGameForm.addEventListener("submit", e => {
+      e.preventDefault()
+
+      let name = createGameInput.value.trim()
+
+      if (!name) {
+        createGameInput.value = ""
+        createGameInput.focus()
+        return
+      }
+
+      sendRequest(ws, { key: "create_game", name })
+
+      createGameForm.remove()
+    })
+
+    let availableGamesTitle = document.createElement("h2")
+    availableGamesTitle.textContent = "Available Games"
+
+    let availableGamesList = document.createElement("ul")
+
+    let emptyGamesText = document.createElement("p")
+    emptyGamesText.textContent = "No available games"
+
+    availableGamesList.append(
+      ...availableGames.map(game => {
+        let gameName = `${game.creatorName}'s Game`
+
+        let li = document.createElement("li")
+
+        let gameTitle = document.createElement("span")
+        gameTitle.textContent = gameName
+
+        let button = document.createElement("button")
+        button.textContent = "Request to Join"
+
+        button.addEventListener("click", () => {
+          pageTitle.textContent = `Request to Join ${gameName}`
+          pageContent.innerHTML = ""
+
+          let form = document.createElement("form")
+          form.classList.add("request-to-join-form")
+
+          let nameInput = document.createElement("input")
+          nameInput.autofocus = true
+          nameInput.maxLength = 20
+          nameInput.required = true
+
+          let nameLabel = document.createElement("label")
+          nameLabel.append("Your name", nameInput)
+
+          let messageTextarea = document.createElement("textarea")
+          messageTextarea.maxLength = 300
+
+          let messageLabel = document.createElement("label")
+          messageLabel.append("Message (optional)", messageTextarea)
+
+          let cancelButton = document.createElement("button")
+          cancelButton.textContent = "Cancel"
+          cancelButton.classList.add("red-text")
+          cancelButton.type = "button"
+          cancelButton.addEventListener("click", () => {
+            pendingGameId = null
+            renderLobby()
+          })
+
+          let submitButton = document.createElement("button")
+          submitButton.classList.add("btn")
+          submitButton.textContent = "Send Request"
+          submitButton.type = "submit"
+
+          form.addEventListener("submit", e => {
+            e.preventDefault()
+
+            if (
+              !pendingGameId ||
+              !availableGames.some(g => g.id == pendingGameId)
+            ) {
+              showToast("Unable to connect to game")
+              renderLobby()
+              return
+            }
+
+            let name = nameInput.value.trim()
+
+            if (!name) {
+              nameInput.value = ""
+              nameInput.focus()
+              return
+            }
+
+            let message = messageTextarea.value.trim()
+
+            nameInput.value = ""
+            messageTextarea.value = ""
+
+            sendRequest(ws, {
+              key: "request_to_join",
+              gameId: pendingGameId,
+              message,
+              name
+            })
+
+            form.remove()
+          })
+
+          form.append(nameLabel, messageLabel, submitButton, cancelButton)
+
+          pageContent.append(form)
+          pendingGameId = game.id
+        })
+
+        li.append(gameTitle, button)
+
+        return li
+      })
+    )
+
+    lobby.append(
+      createGameTitle,
+      createGameForm,
+      availableGamesTitle,
+      availableGames.length ? availableGamesList : emptyGamesText
+    )
+
+    pageContent.append(lobby)
+  }
 }
 
 function getTokenPayload(value: unknown): unknown {

@@ -22,10 +22,8 @@ class Emitter<
   K extends "game",
   T extends K extends "game"
     ?
-        | { key: "create_game"; name: string }
         | { key: "leave_game" }
         | { key: "mark_answer_incorrect" }
-        | { key: "request_to_join"; message: string; name: string }
         | { key: "start_game" }
     : never
 > {
