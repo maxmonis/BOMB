@@ -182,9 +182,14 @@ export async function onConnection(
         } else {
           game.players = game.players.filter(p => p.id != userId)
 
-          let [newHost] = game.players
+          let newHost = game.players.find(p => !p.pending) ?? game.players[0]
+
           if (newHost) {
             newHost.status = "active"
+
+            delete newHost.pending
+            delete newHost.message
+
             sendGameState(game)
           } else games.delete(gameId)
 
