@@ -20,6 +20,7 @@ button {
   color: var(--blue);
   display: inline-flex;
   justify-content: center;
+  max-width: calc(100vw - 2.5rem);
   min-height: 2rem;
   min-width: 2rem;
   width: max-content;

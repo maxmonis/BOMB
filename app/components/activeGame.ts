@@ -75,10 +75,13 @@ export function renderActiveGame(
 
     // -------------------- Idle --------------------
   } else {
-    let challenged = game.players.find(p => p.status == "challenged")
-    gameSubtitle.textContent = challenged
-      ? `${challenged.name} has been challenged!`
-      : `It's ${game.players.find(p => p.status)!.name}'s turn`
+    let player = game.players.find(p => p.status)!
+    gameSubtitle.textContent =
+      player.status == "reviewing"
+        ? `${player.name} is reviewing the challenge response`
+        : player.status == "challenged"
+          ? `${player.name} has been challenged!`
+          : `It's ${player.name}'s turn`
   }
 
   if (winner) {
