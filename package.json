@@ -28,9 +28,9 @@
   },
   "name": "bomb",
   "scripts": {
-    "build": "tsc && vite build --emptyOutDir && node esbuild.mjs",
+    "build": "tsc && vite build --emptyOutDir --mode production && NODE_ENV=production node esbuild.mjs",
     "dev": "concurrently -n client,server \"vite --host\" \"nodemon --watch api --ext ts --exec 'node esbuild.mjs && node .build/api/server.js'\"",
-    "prod": "vite build --emptyOutDir && node esbuild.mjs && NODE_ENV=production PORT=3000 node .build/api/server.js"
+    "prod": "vite build --emptyOutDir --mode development && node esbuild.mjs && NODE_ENV=production PORT=3000 node .build/api/server.js"
   },
   "version": "0.0.0"
 }
