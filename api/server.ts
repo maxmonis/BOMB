@@ -13,6 +13,8 @@ config()
 
 let app = express()
 
+app.set("trust proxy", 1)
+
 app.use(maxRequests(500))
 
 app.get("/api/health", (_req, res) => {
