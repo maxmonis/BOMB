@@ -26,11 +26,13 @@ export function renderPendingGame(
 
   let playerList = document.createElement("ul")
   playerList.append(
-    ...game.players.map(p => {
+    ...game.players.flatMap(p => {
       let li = document.createElement("li")
 
       if (p.pending) {
         pendingCount++
+
+        if (!isCreator) return []
 
         let name = document.createElement("p")
         name.textContent = p.name
