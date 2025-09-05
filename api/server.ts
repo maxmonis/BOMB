@@ -15,6 +15,12 @@ let app = express()
 
 app.set("trust proxy", 1)
 
+app.use((req, res, next) => {
+  if (req.hostname == "www.bomb.maxmonis.com")
+    return res.redirect(301, `https://bomb.maxmonis.com${req.originalUrl}`)
+  next()
+})
+
 app.use(maxRequests(500))
 
 app.get("/api/health", (_req, res) => {
