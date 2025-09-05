@@ -20,12 +20,14 @@ export function renderActiveGame(
   let scoreContainer = createScoreboard(game)
   pageContent.append(scoreContainer, gameSubtitle)
 
-  let currentRound = game.rounds[0]!
-  let previousRounds = game.rounds.slice(1)
+  let currentRound = game.rounds[0] ?? []
   let previousAnswer = currentRound.at(-1)
   let allAnswers = game.rounds.flatMap(r => r)
 
   let { status } = game.players.find(p => p.id == userId)!
+
+  let activePlayers = game.players.filter(p => p.letters < 4)
+  let winner = activePlayers.length == 1 ? activePlayers[0]! : null
 
   // -------------------- Active or Challenged --------------------
   if (status == "active" || status == "challenged") {
@@ -35,41 +37,27 @@ export function renderActiveGame(
         : `a movie${previousAnswer ? ` starring ${previousAnswer.title}` : ""}`
     }`
 
-    renderSearchForm(ws, allAnswers, previousAnswer)
+    if (!winner) renderSearchForm(ws, allAnswers, previousAnswer)
 
     // -------------------- Active --------------------
     if (status == "active") {
       pageTitle.textContent = "It's your turn!"
 
+      renderValidateAnswerDialog(ws, currentRound, false)
+
       if (previousAnswer) {
-        let challengeContainer = document.createElement("div")
-        challengeContainer.classList.add("game-action-container")
-
-        let text = document.createElement("p")
-        text.textContent = "Can't think of anything?"
-
         let challengeButton = document.createElement("button")
         challengeButton.textContent = "Challenge Previous Player"
         challengeButton.classList.add("red-text")
         challengeButton.addEventListener("click", () => {
           sendRequest(ws, { key: "challenge" })
         })
-
-        challengeContainer.append(text, challengeButton)
-        pageContent.append(challengeContainer)
+        pageContent.append(challengeButton)
       }
-
-      renderValidateAnswerDialog(ws, currentRound, false)
 
       // -------------------- Challenged --------------------
     } else {
       pageTitle.textContent = "You've been challenged!"
-
-      let giveUpContainer = document.createElement("div")
-      giveUpContainer.classList.add("game-action-container")
-
-      let text = document.createElement("p")
-      text.textContent = "Can't think of anything?"
 
       let giveUpButton = document.createElement("button")
       giveUpButton.textContent = "Give Up"
@@ -77,9 +65,7 @@ export function renderActiveGame(
       giveUpButton.addEventListener("click", () =>
         sendRequest(ws, { key: "give_up" })
       )
-
-      giveUpContainer.append(text, giveUpButton)
-      pageContent.append(giveUpContainer)
+      pageContent.append(giveUpButton)
     }
 
     // -------------------- Reviewing --------------------
@@ -93,19 +79,19 @@ export function renderActiveGame(
     let challenged = game.players.find(p => p.status == "challenged")
     gameSubtitle.textContent = challenged
       ? `${challenged.name} has been challenged!`
-      : `${game.players.find(p => p.status)!.name} is thinking...`
+      : `It's ${game.players.find(p => p.status)!.name}'s turn`
   }
 
-  let active = game.players.filter(p => p.letters < 4)
-  let winner = active.length == 1 ? active[0]! : null
-  if (winner)
+  if (winner) {
+    pageTitle.textContent = "Game Over"
     gameSubtitle.textContent =
       winner.id == userId
         ? "Congratulations, you're the winner!"
         : `${winner.name} wins. Better luck next time!`
+  }
 
   pageContent.append(
-    createRounds(currentRound, previousRounds),
+    createRounds(game.rounds, !winner),
     createLeaveGameDialog(ws)
   )
 }
@@ -175,15 +161,7 @@ function renderValidateAnswerDialog(
     dialog.showModal()
   })
 
-  let container = document.createElement("div")
-  container.classList.add("game-action-container")
-  container.append(link)
-  if (!reviewingChallengeResponse) {
-    let text = document.createElement("p")
-    text.textContent = "Think the previous answer was incorrect?"
-    container.prepend(text)
-  }
-  pageContent.append(container)
+  pageContent.append(link)
 }
 
 function createScoreboard(game: ActiveGame) {
@@ -214,29 +192,49 @@ function createScoreboard(game: ActiveGame) {
   return ul
 }
 
-function createRounds(current: Array<Page>, previous: Array<Array<Page>>) {
+function createRounds(
+  [current = [], ...previous]: Array<Array<Page>>,
+  includeCurrent: boolean
+) {
   let container = document.createElement("div")
   container.classList.add("game-rounds")
 
-  if (current.length) {
-    let text = document.createElement("p")
-    text.innerHTML = current.map(p => p.title).join(" → ")
-    container.append("Current round:", text)
-  }
+  if (includeCurrent) container.append(createRound(current, "Current Round"))
 
-  if (previous.length) {
-    let list = document.createElement("div")
-    list.append(
-      ...previous.map(round => {
-        let text = document.createElement("p")
-        text.innerHTML = round.map(p => p.title).join(" → ")
-        return text
-      })
-    )
-    container.append("Previous rounds:", list)
-  }
+  if (previous.length)
+    previous.forEach((round, i) => {
+      container.append(createRound(round, `Round ${previous.length - i}`))
+    })
 
   return container
+}
+
+function createRound(round: Array<Page>, label: string) {
+  let fieldSet = document.createElement("fieldset")
+  fieldSet.classList.add("round-box")
+
+  let heading = document.createElement("legend")
+  heading.textContent = label
+
+  if (round.length == 0) {
+    let text = document.createElement("p")
+    text.textContent = "Waiting for the first movie..."
+    fieldSet.append(heading, text)
+    return fieldSet
+  }
+
+  let entries = document.createElement("div")
+  entries.classList.add("round-entries")
+
+  for (let { title } of round) {
+    let entry = document.createElement("div")
+    entry.classList.add("round-entry")
+    entry.textContent = title
+    entries.hasChildNodes() ? entries.append("→", entry) : entries.append(entry)
+  }
+
+  fieldSet.append(heading, entries)
+  return fieldSet
 }
 
 function renderSearchForm(
