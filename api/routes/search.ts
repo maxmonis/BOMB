@@ -1,4 +1,5 @@
 import { Router } from "express"
+import type { ActorPage, MoviePage } from "../../lib/types"
 import { hasChars } from "../../lib/utils"
 import { authToken } from "../middleware"
 
@@ -110,21 +111,6 @@ async function wikipediaRequest<T extends object>(
   if (!res.ok) throw value
   if ("error" in value) throw value.error.info
   return value
-}
-
-interface ActorPage extends WikiPage {
-  birthYear: number
-}
-
-interface MoviePage extends WikiPage {
-  releaseYear: number
-}
-
-export type Page = ActorPage | MoviePage
-
-interface WikiPage {
-  pageid: number
-  title: string
 }
 
 interface WikipediaError {

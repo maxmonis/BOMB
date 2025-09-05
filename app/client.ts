@@ -1,4 +1,4 @@
-import type { SocketRequest } from "../api/ws"
+import type { SocketRequest } from "../lib/types"
 import { hasChars } from "../lib/utils"
 
 class Channel<K extends "dark", T extends K extends "dark" ? boolean : never> {

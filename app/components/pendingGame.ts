@@ -1,4 +1,4 @@
-import type { SocketResponse } from "../../api/ws"
+import type { SocketResponse } from "../../lib/types"
 import { sendRequest } from "../client"
 import { pageContent, pageTitle } from "../elements"
 import { createLeaveGameDialog } from "./leaveGameDialog"

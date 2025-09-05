@@ -1,4 +1,4 @@
-import type { SocketResponse } from "../api/ws"
+import type { SocketResponse } from "../lib/types"
 import "../style/global.css"
 import { createWebSocket, getUserIdFromToken, localToken } from "./client"
 import { renderActiveGame } from "./components/activeGame"

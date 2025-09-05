@@ -1,5 +1,4 @@
-import type { Page } from "../../api/routes/search"
-import type { SocketResponse } from "../../api/ws"
+import type { Page, SocketResponse } from "../../lib/types"
 import { hasChars } from "../../lib/utils"
 import { callAPI, sendRequest, wrapLabel } from "../client"
 import { pageContent, pageTitle, spinner } from "../elements"

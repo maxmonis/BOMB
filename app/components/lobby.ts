@@ -1,4 +1,4 @@
-import type { SocketResponse } from "../../api/ws"
+import type { SocketResponse } from "../../lib/types"
 import { sendRequest, wrapLabel } from "../client"
 import { pageContent, pageTitle } from "../elements"
 import { showToast } from "../ui"
