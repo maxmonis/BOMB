@@ -16,6 +16,7 @@ function init() {
   let userId = getUserIdFromToken(token)
   let ws = createWebSocket(token)
 
+  ws.onclose = reset
   ws.onerror = reset
 
   ws.onmessage = ({ data }) => {
@@ -52,7 +53,13 @@ function init() {
   }
 
   function reset() {
-    ws.close()
+    ws.onclose = null
+    ws.onerror = null
+    if (
+      ws.readyState == WebSocket.OPEN ||
+      ws.readyState == WebSocket.CONNECTING
+    )
+      ws.close()
     init()
   }
 }
