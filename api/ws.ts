@@ -160,6 +160,14 @@ export async function onConnection(
           if (p.socket) sendResponse(p.socket, toastMessage)
 
         if (game.rounds) {
+          let activePlayers = game.players.filter(p => (p.letters ?? 0) < 4)
+
+          if (activePlayers.length == 1) {
+            games.delete(gameId)
+            for (let socket of lobby) sendResponse(socket, getAvailableGames())
+            return
+          }
+
           player.letters = 4
 
           if (player.status) {
