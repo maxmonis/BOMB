@@ -50,7 +50,7 @@ async function getPageLines(ids: Array<string>) {
 }
 
 async function searchActors(term: string) {
-  let results = await searchWiki(term)
+  let results = await searchWiki(term.trim() + " (actor)")
   let birthYears: Record<string, number> = {}
   let ids = results.map(r => r.pageid.toString())
   let pageLines = await getPageLines(ids)
@@ -69,7 +69,7 @@ async function searchActors(term: string) {
 }
 
 async function searchMovies(term: string) {
-  let results = await searchWiki(term)
+  let results = await searchWiki(term.trim() + " (film)")
   let releaseYears: Record<string, number> = {}
   let pageIds = results.map(r => r.pageid.toString())
   let pageLines = await getPageLines(pageIds)
