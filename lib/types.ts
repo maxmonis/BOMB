@@ -1,8 +1,6 @@
 import type { WebSocket } from "ws"
 
-interface ActiveGamePlayer
-  extends Omit<Player, "message" | "pending" | "socket"> {
-  connected: boolean
+interface ActiveGamePlayer extends Omit<Player, "message" | "pending"> {
   letters: number
 }
 
@@ -28,12 +26,8 @@ export interface MoviePage extends WikiPage {
 export type Page = ActorPage | MoviePage
 
 interface PendingGameResponse {
-  players: Array<PendingGamePlayer>
+  players: Array<Player>
   started: false
-}
-
-interface PendingGamePlayer extends Omit<Player, "socket"> {
-  connected: boolean
 }
 
 interface Player {
@@ -42,7 +36,6 @@ interface Player {
   message?: string
   name: string
   pending?: boolean
-  socket?: Socket
   status?: "active" | "challenged" | "reviewing"
 }
 

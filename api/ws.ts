@@ -4,7 +4,9 @@ import type { Game, Socket, SocketRequest, SocketResponse } from "../lib/types"
 import { hasChars } from "../lib/utils"
 import { decrypt, encrypt } from "./jose"
 
-let lobby = new Set<Socket>()
+let gameSockets = new Map<string, Socket>()
+let lobbySockets = new Set<Socket>()
+
 export let games = new Map<string, Game>()
 
 export async function onConnection(
@@ -22,20 +24,20 @@ export async function onConnection(
   let game = gameId ? games.get(gameId) : null
   let player = game && userId ? game.players.find(p => p.id == userId) : null
 
-  if (game && player) {
-    player.socket = ws
+  if (game && player && userId) {
+    gameSockets.set(userId, ws)
     sendResponse(ws, getGameState(game))
   } else {
     if (token) sendResponse(ws, { key: "invalid_token" })
     gameId = null
     userId = crypto.randomUUID()
-    lobby.add(ws)
+    lobbySockets.add(ws)
     sendResponse(ws, getAvailableGames())
   }
 
   ws.on("close", () => {
-    if (player) delete player.socket
-    else lobby.delete(ws)
+    if (player) gameSockets.delete(player.id)
+    else lobbySockets.delete(ws)
   })
 
   ws.on("message", async rawData => {
@@ -44,19 +46,20 @@ export async function onConnection(
     try {
       // -------------------- Create Game --------------------
       if (req.key == "create_game") {
-        player = { id: userId, name: req.name, socket: ws, status: "active" }
+        player = { id: userId, name: req.name, status: "active" }
         game = { players: [player] }
         gameId = crypto.randomUUID()
 
         games.set(gameId, game)
-        lobby.delete(ws)
+        lobbySockets.delete(ws)
 
         let token = await encrypt({ gameId, userId })
         sendResponse(ws, { key: "token", token })
 
         sendGameState(game)
 
-        for (let socket of lobby) sendResponse(socket, getAvailableGames())
+        for (let socket of lobbySockets)
+          sendResponse(socket, getAvailableGames())
       }
 
       // -------------------- Request to Join --------------------
@@ -73,8 +76,7 @@ export async function onConnection(
           id: userId,
           message: req.message,
           name: req.name,
-          pending: true,
-          socket: ws
+          pending: true
         }
         game.players.push(player)
 
@@ -97,8 +99,8 @@ export async function onConnection(
         delete acceptedPlayer.message
         delete acceptedPlayer.pending
 
-        if (acceptedPlayer.socket)
-          sendResponse(acceptedPlayer.socket, {
+        if (gameSockets.has(acceptedPlayer.id))
+          sendResponse(gameSockets.get(acceptedPlayer.id)!, {
             key: "toast",
             message: "You've been admitted"
           })
@@ -111,8 +113,9 @@ export async function onConnection(
         if (!game) throw "Game not found"
         if (game.rounds) throw "Game has already started"
 
-        let socket = game.players.find(p => p.id == req.userId)?.socket
-        if (socket) {
+        let deniedPlayer = game.players.find(p => p.id == req.userId)
+        if (deniedPlayer && gameSockets.has(deniedPlayer.id)) {
+          let socket = gameSockets.get(deniedPlayer.id)!
           sendResponse(socket, {
             key: "toast",
             message: "Your join request was denied"
@@ -130,12 +133,13 @@ export async function onConnection(
         if (game.rounds) throw "Game has already started"
 
         for (let p of game.players)
-          if (p.pending && p.socket) {
-            sendResponse(p.socket, {
+          if (p.pending && gameSockets.has(p.id)) {
+            let socket = gameSockets.get(p.id)!
+            sendResponse(socket, {
               key: "toast",
               message: "Your join request was denied"
             })
-            sendResponse(p.socket, { key: "invalid_token" })
+            sendResponse(socket, { key: "invalid_token" })
           }
 
         game.players = game.players.filter(p => !p.pending)
@@ -148,23 +152,25 @@ export async function onConnection(
         if (!game || !gameId) throw "Game not found"
         if (!player) throw "Player not found"
 
-        if (player.socket) sendResponse(player.socket, { key: "invalid_token" })
+        sendResponse(ws, { key: "invalid_token" })
 
-        delete player.socket
+        gameSockets.delete(player.id)
 
         let toastMessage = {
           key: "toast",
           message: `${player.name} left the game`
         } as const
         for (let p of game.players)
-          if (p.socket) sendResponse(p.socket, toastMessage)
+          if (gameSockets.has(p.id))
+            sendResponse(gameSockets.get(p.id)!, toastMessage)
 
         if (game.rounds) {
           let activePlayers = game.players.filter(p => (p.letters ?? 0) < 4)
 
           if (activePlayers.length == 1) {
             games.delete(gameId)
-            for (let socket of lobby) sendResponse(socket, getAvailableGames())
+            for (let socket of lobbySockets)
+              sendResponse(socket, getAvailableGames())
             return
           }
 
@@ -193,7 +199,8 @@ export async function onConnection(
             sendGameState(game)
           } else games.delete(gameId)
 
-          for (let socket of lobby) sendResponse(socket, getAvailableGames())
+          for (let socket of lobbySockets)
+            sendResponse(socket, getAvailableGames())
         }
       }
 
@@ -231,7 +238,8 @@ export async function onConnection(
           message: `${player.name} has challenged ${previousPlayer.name}!`
         } as const
         for (let p of game.players)
-          if (p.socket) sendResponse(p.socket, toastMessage)
+          if (gameSockets.has(p.id))
+            sendResponse(gameSockets.get(p.id)!, toastMessage)
 
         sendGameState(game)
       }
@@ -255,7 +263,8 @@ export async function onConnection(
           }`
         } as const
         for (let p of game.players)
-          if (p.socket) sendResponse(p.socket, toastMessage)
+          if (gameSockets.has(p.id))
+            sendResponse(gameSockets.get(p.id)!, toastMessage)
 
         game.rounds.unshift([])
 
@@ -289,7 +298,8 @@ export async function onConnection(
           }`
         } as const
         for (let p of game.players)
-          if (p.socket) sendResponse(p.socket, toastMessage)
+          if (gameSockets.has(p.id))
+            sendResponse(gameSockets.get(p.id)!, toastMessage)
 
         game.rounds.unshift([])
 
@@ -327,7 +337,8 @@ export async function onConnection(
           }`
         } as const
         for (let p of game.players)
-          if (p.socket) sendResponse(p.socket, toastMessage)
+          if (gameSockets.has(p.id))
+            sendResponse(gameSockets.get(p.id)!, toastMessage)
 
         game.rounds.unshift([])
 
@@ -392,25 +403,20 @@ function getGameState({ players, rounds }: Game) {
     key: "game_state",
     game: rounds
       ? {
-          players: players.map(({ letters = 0, socket, ...player }) => {
-            return { connected: Boolean(socket), letters, ...player }
+          players: players.map(({ letters = 0, ...player }) => {
+            return { letters, ...player }
           }),
           rounds,
           started: true as const
         }
-      : {
-          players: players.map(({ socket, ...player }) => {
-            return { connected: Boolean(socket), ...player }
-          }),
-          started: false as const
-        }
+      : { players, started: false as const }
   } as const
 }
 
 function sendGameState(game: Game) {
   let gameState = getGameState(game)
-  for (let player of game.players)
-    if (player.socket) sendResponse(player.socket, gameState)
+  for (let p of game.players)
+    if (gameSockets.has(p.id)) sendResponse(gameSockets.get(p.id)!, gameState)
 }
 
 function sendResponse(ws: Socket, res: SocketResponse) {
@@ -418,23 +424,22 @@ function sendResponse(ws: Socket, res: SocketResponse) {
 }
 
 setInterval(() => {
-  for (let socket of lobby)
+  for (let socket of lobbySockets)
     if (socket.alive) {
       socket.alive = false
       socket.ping()
     } else {
       socket.terminate()
-      lobby.delete(socket)
+      lobbySockets.delete(socket)
     }
 
-  for (let game of games.values())
-    for (let player of game.players)
-      if (player.socket)
-        if (player.socket.alive) {
-          player.socket.alive = false
-          player.socket.ping()
-        } else {
-          player.socket.terminate()
-          delete player.socket
-        }
+  for (let [id, socket] of gameSockets.entries())
+    if (socket)
+      if (socket.alive) {
+        socket.alive = false
+        socket.ping()
+      } else {
+        socket.terminate()
+        gameSockets.delete(id)
+      }
 }, 30_000)
