@@ -157,7 +157,10 @@ function renderValidateAnswerDialog(
   link.textContent = `Search "${query}"`
   link.setAttribute("target", "_blank")
   link.setAttribute("rel", "noopener")
-  link.setAttribute("href", `https://www.google.com/search?q=${query}`)
+  link.setAttribute(
+    "href",
+    `https://www.google.com/search?q=${encodeURIComponent(query)}`
+  )
   link.addEventListener("click", () => {
     document.body.append(dialog)
     dialog.showModal()
