@@ -19,7 +19,7 @@ export function createLeaveGameDialog(ws: WebSocket) {
 
   let leave = document.createElement("button")
   leave.textContent = "Yes, leave"
-  leave.classList.add("red-text")
+  leave.classList.add("red")
   leave.addEventListener("click", () => {
     localToken.remove()
 
@@ -35,7 +35,7 @@ export function createLeaveGameDialog(ws: WebSocket) {
 
   let button = document.createElement("button")
   button.textContent = "Leave Game"
-  button.classList.add("red-text")
+  button.classList.add("red")
   button.addEventListener("click", () => {
     document.body.append(dialog)
     dialog.showModal()

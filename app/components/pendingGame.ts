@@ -45,7 +45,7 @@ export function renderPendingGame(
 
         let rejectButton = document.createElement("button")
         rejectButton.textContent = "Reject"
-        rejectButton.classList.add("red-text")
+        rejectButton.classList.add("red")
         rejectButton.addEventListener("click", () => {
           sendRequest(ws, { key: "deny_join_request", userId: p.id })
           li.remove()

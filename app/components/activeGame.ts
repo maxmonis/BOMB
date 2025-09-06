@@ -28,15 +28,24 @@ export function renderActiveGame(
   let activePlayers = game.players.filter(p => p.letters < 4)
   let winner = activePlayers.length == 1 ? activePlayers[0]! : null
 
+  // -------------------- Game Over --------------------
+  if (winner) {
+    pageTitle.textContent = "Game Over"
+    gameSubtitle.textContent =
+      winner.id == userId
+        ? "Congratulations, you're the winner!"
+        : `${winner.name} wins. Better luck next time!`
+  }
+
   // -------------------- Active or Challenged --------------------
-  if (status == "active" || status == "challenged") {
+  else if (status == "active" || status == "challenged") {
     gameSubtitle.textContent = `Name ${
       previousAnswer && "releaseYear" in previousAnswer
         ? `an actor from ${previousAnswer.title} (${previousAnswer.releaseYear})`
         : `a movie${previousAnswer ? ` starring ${previousAnswer.title}` : ""}`
     }`
 
-    if (!winner) renderSearchForm(ws, allAnswers, previousAnswer)
+    renderSearchForm(ws, allAnswers, previousAnswer)
 
     // -------------------- Active --------------------
     if (status == "active") {
@@ -47,7 +56,7 @@ export function renderActiveGame(
       if (previousAnswer) {
         let challengeButton = document.createElement("button")
         challengeButton.textContent = "Challenge Previous Player"
-        challengeButton.classList.add("red-text")
+        challengeButton.classList.add("red")
         challengeButton.addEventListener("click", () => {
           sendRequest(ws, { key: "challenge" })
         })
@@ -60,7 +69,7 @@ export function renderActiveGame(
 
       let giveUpButton = document.createElement("button")
       giveUpButton.textContent = "Give Up"
-      giveUpButton.classList.add("red-text")
+      giveUpButton.classList.add("red")
       giveUpButton.addEventListener("click", () =>
         sendRequest(ws, { key: "give_up" })
       )
@@ -82,14 +91,6 @@ export function renderActiveGame(
         : player.status == "challenged"
           ? `${player.name} has been challenged!`
           : `It's ${player.name}'s turn`
-  }
-
-  if (winner) {
-    pageTitle.textContent = "Game Over"
-    gameSubtitle.textContent =
-      winner.id == userId
-        ? "Congratulations, you're the winner!"
-        : `${winner.name} wins. Better luck next time!`
   }
 
   pageContent.append(
@@ -116,7 +117,6 @@ function renderValidateAnswerDialog(
   if (!actor || !movie) return
 
   let dialog = document.createElement("dialog")
-  dialog.classList.add("validator-dialog")
   dialog.addEventListener("click", e => {
     if (e.target == dialog) dialog.close()
   })
@@ -127,7 +127,7 @@ function renderValidateAnswerDialog(
   title.textContent = `So, ${query}`
 
   let valid = document.createElement("button")
-  valid.textContent = "Yes, it was a valid answer"
+  valid.textContent = "Yes, correct"
   valid.autofocus = true
   valid.addEventListener("click", () => {
     if (reviewingChallengeResponse)
@@ -137,8 +137,8 @@ function renderValidateAnswerDialog(
   })
 
   let invalid = document.createElement("button")
-  invalid.classList.add("red-text")
-  invalid.textContent = "No, give the previous player a letter"
+  invalid.classList.add("red")
+  invalid.textContent = "No, incorrect"
   invalid.addEventListener("click", () => {
     sendRequest(ws, { key: "mark_answer_incorrect" })
     dialog.close()
@@ -147,7 +147,7 @@ function renderValidateAnswerDialog(
 
   let buttons = document.createElement("div")
   buttons.classList.add("dialog-button-container")
-  buttons.append(valid, invalid)
+  buttons.append(invalid, valid)
 
   let content = document.createElement("div")
   content.append(title, buttons)
@@ -184,7 +184,7 @@ function createScoreboard(game: ActiveGame) {
         ..."BOMB".split("").map((letter, i) => {
           let span = document.createElement("span")
           span.textContent = letter
-          if (p.letters > i) span.classList.add("red-text")
+          if (p.letters > i) span.classList.add("red")
           return span
         })
       )
@@ -251,6 +251,8 @@ function renderSearchForm(
   container.classList.add("search-container")
 
   let input = document.createElement("input")
+  input.autofocus = true
+
   let results = document.createElement("ul")
   let timeout: ReturnType<typeof setTimeout> | null = null
 
@@ -303,11 +305,15 @@ function renderSearchForm(
           return li
         })
       )
-    }, 500)
+    }, 750)
   })
 
   container.append(wrapLabel(`Search ${category}s`, input), results)
   pageContent.append(container)
+
+  setTimeout(() => {
+    input.focus()
+  }, 100)
 }
 
 type ActiveGame = Extract<

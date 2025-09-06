@@ -120,7 +120,7 @@ function renderJoinRequestForm(
   let cancelButton = document.createElement("button")
   cancelButton.type = "button"
   cancelButton.textContent = "Cancel"
-  cancelButton.classList.add("red-text")
+  cancelButton.classList.add("red")
   cancelButton.addEventListener("click", () => {
     pendingGameId = null
     renderLobby(ws)

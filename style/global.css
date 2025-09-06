@@ -7,6 +7,10 @@ footer > div:first-child {
   gap: 1.25rem;
 }
 
+footer > div:first-child button {
+  border-style: none;
+}
+
 ol,
 ul {
   list-style: none;
@@ -27,11 +31,19 @@ button {
 }
 
 button {
-  border: none;
+  border-color: var(--blue);
+  border-radius: 0.5rem;
+  border-style: solid;
+  border-width: 1px;
   background: none;
   cursor: pointer;
   font-size: inherit;
-  padding: 0;
+  margin-block: 0.75rem;
+  padding: 0.25rem 0.675rem;
+}
+
+button.red {
+  border-color: var(--red);
 }
 
 label {
@@ -95,9 +107,9 @@ dialog h1 {
 }
 
 .dialog-button-container {
+  column-gap: 1.25rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.25rem;
   justify-content: flex-end;
 }
 
@@ -177,13 +189,16 @@ dialog h1 {
   display: flex;
   gap: 1.25rem;
   justify-content: space-between;
-  padding-block: 0.5rem;
 }
 
 .lobby ul li span,
 .waiting-room ul li span {
   font-size: 1.125rem;
   font-weight: 600;
+}
+
+.waiting-room ul li span {
+  padding-block: 0.5rem;
 }
 
 .waiting-room ul li div:last-child {
@@ -229,13 +244,14 @@ dialog h1 {
 .btn {
   background-color: var(--bg-blue);
   border-radius: 0.75rem;
+  border-style: none;
   color: var(--light);
   font-weight: 600;
   padding: 0.5rem 1rem;
   width: 100%;
 }
 
-.red-text {
+.red {
   color: var(--red);
 }
 
@@ -256,7 +272,6 @@ dialog h1 {
   display: flex;
   gap: 1.25rem;
   justify-content: space-between;
-  padding-block: 0.5rem;
   width: 100%;
 }
 
@@ -274,6 +289,10 @@ dialog h1 {
 
 .round-box {
   border-radius: 8px;
+  border-color: var(--gray);
+  border-width: 1px;
+  color: var(--gray);
+  font-size: 0.875rem;
   padding-inline: 0.75rem;
 }
 
@@ -285,16 +304,19 @@ dialog h1 {
 }
 
 .round-entry {
-  background-color: color-mix(in oklab, var(--fg) 75%, transparent);
-  color: var(--bg);
-  padding: 0.375rem 0.75rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
+  background-color: var(--gray);
+  color: color-mix(in oklab, var(--bg) 80%, transparent);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.75rem;
 }
 
 .score-container li {
   background-color: color-mix(in oklab, var(--gray) 10%, transparent);
   position: relative;
+}
+
+.score-container li div:not(.red) {
+  color: color-mix(in oklab, var(--gray) 70%, transparent);
 }
 
 .score-container li::before {
