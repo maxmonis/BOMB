@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express"
 import rateLimit from "express-rate-limit"
 import { hasChars } from "../lib/utils"
 import { decrypt } from "./jose"
-import { games } from "./ws"
+import { gameSockets } from "./ws"
 
 export async function authToken(
   req: Request,
@@ -17,9 +17,7 @@ export async function authToken(
   try {
     let { gameId, userId } = await decrypt(token)
     if (!hasChars(gameId) || !hasChars(userId)) throw "Invalid token"
-    let game = games.get(gameId)
-    if (!game?.rounds || !game.players.some(p => p.id == userId))
-      throw "Invalid token"
+    if (!gameSockets.has(userId)) throw "Invalid token"
     next()
   } catch (error) {
     res.status(401).json("Invalid token")

@@ -4,10 +4,10 @@ import type { Game, Socket, SocketRequest, SocketResponse } from "../lib/types"
 import { hasChars } from "../lib/utils"
 import { decrypt, encrypt } from "./jose"
 
-let gameSockets = new Map<string, Socket>()
+export let gameSockets = new Map<string, Socket>()
 let lobbySockets = new Set<Socket>()
 
-export let games = new Map<string, Game>()
+let games = new Map<string, Game>()
 
 export async function onConnection(
   socket: WebSocket,
