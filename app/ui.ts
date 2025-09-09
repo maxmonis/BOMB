@@ -8,8 +8,8 @@ darkToggle.title = "Toggle dark mode"
 
 darkToggle.addEventListener("click", () => {
   dark = !dark
-  localDark.set(dark)
   applyDark()
+  localDark.set(dark)
   darkChannel.post(dark)
 })
 
@@ -35,11 +35,14 @@ toast.role = "alert"
 
 let toastTimeout: ReturnType<typeof setTimeout>
 
-export function removeToast() {
+function removeToast() {
   if (!document.body.contains(toast)) return
+
   return new Promise(resolve => {
     clearTimeout(toastTimeout)
+
     toast.classList.add("exit")
+
     toastTimeout = setTimeout(() => {
       toast.classList.remove("enter", "exit")
       toast.remove()
@@ -50,8 +53,11 @@ export function removeToast() {
 
 export async function showToast(message: string, durationMS = 3000) {
   await removeToast()
+
   toast.innerHTML = message
+
   document.body.append(toast)
+
   toastTimeout = setTimeout(() => {
     toast.classList.add("enter")
     toastTimeout = setTimeout(removeToast, durationMS)

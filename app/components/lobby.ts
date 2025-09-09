@@ -17,8 +17,8 @@ export function renderLobby(ws: WebSocket, games = gameList) {
     }
 
   let lobby = document.createElement("div")
-  lobby.classList.add("lobby")
   lobby.append(createGameForm(ws), createGameList(ws))
+  lobby.classList.add("lobby")
 
   pageTitle.textContent = "Lobby"
   pageContent.innerHTML = ""
@@ -26,15 +26,9 @@ export function renderLobby(ws: WebSocket, games = gameList) {
 }
 
 function createGameForm(ws: WebSocket) {
-  let title = document.createElement("h2")
-  title.textContent = "Create New Game"
-
   let input = document.createElement("input")
   input.maxLength = 20
   input.required = true
-
-  let label = document.createElement("label")
-  label.append("Your name", input)
 
   let button = document.createElement("button")
   button.classList.add("btn")
@@ -42,7 +36,7 @@ function createGameForm(ws: WebSocket) {
   button.type = "submit"
 
   let form = document.createElement("form")
-  form.append(label, button)
+  form.append(wrapLabel("Your name", input), button)
 
   form.addEventListener("submit", e => {
     e.preventDefault()
@@ -57,6 +51,9 @@ function createGameForm(ws: WebSocket) {
 
     sendRequest(ws, { key: "create_game", name })
   })
+
+  let title = document.createElement("h2")
+  title.textContent = "Create New Game"
 
   let container = document.createElement("div")
   container.append(title, form)
@@ -80,16 +77,16 @@ function createGameList(ws: WebSocket) {
   let list = document.createElement("ul")
   list.append(
     ...gameList.map(game => {
-      let li = document.createElement("li")
       let name = document.createElement("span")
       name.textContent = `${game.creatorName}'s Game`
 
       let button = document.createElement("button")
-      button.textContent = "Request to Join"
       button.addEventListener("click", () => {
         renderJoinRequestForm(ws, game.id, game.creatorName)
       })
+      button.textContent = "Request to Join"
 
+      let li = document.createElement("li")
       li.append(name, button)
       return li
     })
@@ -106,30 +103,30 @@ function renderJoinRequestForm(
 ) {
   pendingGameId = gameId
 
-  let form = document.createElement("form")
-  form.classList.add("request-to-join-form")
-
   let input = document.createElement("input")
-  input.required = true
-  input.maxLength = 20
   input.autofocus = true
+  input.maxLength = 20
+  input.required = true
 
   let textarea = document.createElement("textarea")
   textarea.maxLength = 300
 
+  let submitButton = document.createElement("button")
+  submitButton.classList.add("btn")
+  submitButton.textContent = "Send Request"
+  submitButton.type = "submit"
+
   let cancelButton = document.createElement("button")
-  cancelButton.type = "button"
-  cancelButton.textContent = "Cancel"
-  cancelButton.classList.add("red")
   cancelButton.addEventListener("click", () => {
     pendingGameId = null
     renderLobby(ws)
   })
+  cancelButton.classList.add("red")
+  cancelButton.textContent = "Cancel"
+  cancelButton.type = "button"
 
-  let submitButton = document.createElement("button")
-  submitButton.type = "submit"
-  submitButton.textContent = "Send Request"
-  submitButton.classList.add("btn")
+  let form = document.createElement("form")
+  form.classList.add("request-to-join-form")
 
   form.append(
     wrapLabel("Your name", input),
@@ -144,8 +141,8 @@ function renderJoinRequestForm(
     let name = input.value.trim()
 
     if (!name) {
-      input.focus()
       input.value = ""
+      input.focus()
       return
     }
 

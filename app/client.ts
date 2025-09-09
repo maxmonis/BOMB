@@ -3,12 +3,15 @@ import { hasChars } from "../lib/utils"
 
 class Channel<K extends "dark", T extends K extends "dark" ? boolean : never> {
   private readonly channel: BroadcastChannel
+
   constructor(key: K) {
     this.channel = new BroadcastChannel(key)
   }
+
   post(data: T) {
     this.channel.postMessage(data)
   }
+
   listen(callback: (data: T) => void) {
     this.channel.onmessage = e => {
       callback(e.data)
@@ -23,16 +26,20 @@ class LocalStorage<
   T extends K extends "dark" ? boolean : K extends "token" ? string : never
 > {
   private readonly key: K
+
   constructor(key: K) {
     this.key = key
   }
+
   get(): T | null {
     let item = localStorage.getItem(this.key)
     return item ? JSON.parse(item) : null
   }
+
   set(item: T) {
     localStorage.setItem(this.key, JSON.stringify(item))
   }
+
   remove() {
     localStorage.removeItem(this.key)
   }
@@ -46,6 +53,7 @@ export async function callAPI<T>(
   { headers: headersInit, ...init }: RequestInit = {}
 ) {
   let token = localToken.get()
+
   let res = await fetch(`/api/${path}`, {
     ...init,
     headers: {
@@ -55,10 +63,13 @@ export async function callAPI<T>(
       ...headersInit
     }
   })
+
   let value: T = await res.json()
   if (res.ok) return value
+
   if (res.status == 409 && value == "New version available, please reload page")
     window.location.reload()
+
   throw value
 }
 
@@ -86,6 +97,7 @@ function getTokenPayload(value: unknown): unknown {
 
 export function getUserIdFromToken(token: unknown) {
   let tokenPayload = getTokenPayload(token)
+
   return tokenPayload &&
     typeof tokenPayload == "object" &&
     "userId" in tokenPayload &&

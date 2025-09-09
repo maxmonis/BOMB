@@ -26,37 +26,37 @@ export function renderPendingGame(
 
   let playerList = document.createElement("ul")
   playerList.append(
-    ...game.players.flatMap(p => {
+    ...game.players.flatMap(player => {
       let li = document.createElement("li")
 
-      if (p.pending) {
+      if (player.pending) {
         pendingCount++
 
         if (!isCreator) return []
 
         let name = document.createElement("p")
-        name.textContent = p.name
+        name.textContent = player.name
 
         let message = document.createElement("small")
-        message.textContent = p.message ?? ""
+        message.textContent = player.message ?? ""
 
         let text = document.createElement("div")
         text.append(name, message)
 
         let rejectButton = document.createElement("button")
-        rejectButton.textContent = "Reject"
-        rejectButton.classList.add("red")
         rejectButton.addEventListener("click", () => {
-          sendRequest(ws, { key: "deny_join_request", userId: p.id })
+          sendRequest(ws, { key: "deny_join_request", userId: player.id })
           li.remove()
         })
+        rejectButton.classList.add("red")
+        rejectButton.textContent = "Reject"
 
         let admitButton = document.createElement("button")
-        admitButton.textContent = "Admit to Game"
         admitButton.addEventListener("click", () => {
-          sendRequest(ws, { key: "accept_join_request", userId: p.id })
+          sendRequest(ws, { key: "accept_join_request", userId: player.id })
           li.remove()
         })
+        admitButton.textContent = "Admit to Game"
 
         let buttons = document.createElement("div")
         buttons.append(rejectButton, admitButton)
@@ -66,11 +66,10 @@ export function renderPendingGame(
         admittedCount++
 
         let name = document.createElement("span")
-        name.textContent = p.name
+        name.textContent = player.name
 
         let check = document.createElement("span")
         check.textContent = "✅"
-        check.style.fontSize = "1.25rem"
 
         li.append(name, check)
       }
@@ -95,11 +94,11 @@ export function renderPendingGame(
 
       if (admittedCount > 1) {
         let startButton = document.createElement("button")
-        startButton.textContent = "Start Game"
-        startButton.classList.add("btn")
         startButton.addEventListener("click", () =>
           sendRequest(ws, { key: "start_game" })
         )
+        startButton.classList.add("btn")
+        startButton.textContent = "Start Game"
         waitingRoom.append(startButton)
       } else {
         pendingText.textContent = "Waiting for more players..."

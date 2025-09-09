@@ -1,6 +1,7 @@
 import type { WebSocket } from "ws"
 
-interface ActiveGamePlayer extends Omit<Player, "message" | "pending"> {
+interface ActiveGamePlayer
+  extends Omit<Player, "letters" | "message" | "pending"> {
   letters: number
 }
 
@@ -26,7 +27,7 @@ export interface MoviePage extends WikiPage {
 export type Page = ActorPage | MoviePage
 
 interface PendingGameResponse {
-  players: Array<Player>
+  players: Array<Omit<Player, "letters" | "status">>
   started: false
 }
 
@@ -50,8 +51,8 @@ export type SocketRequest =
   | { key: "deny_join_request"; userId: string }
   | { key: "give_up" }
   | { key: "leave_game" }
-  | { key: "mark_answer_incorrect" }
   | { key: "mark_answer_correct" }
+  | { key: "mark_answer_incorrect" }
   | { key: "play_move"; page: Page }
   | { key: "request_to_join"; gameId: string; message: string; name: string }
   | { key: "start_game" }

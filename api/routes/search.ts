@@ -75,8 +75,7 @@ async function searchMovies(term: string) {
   let pageLines = await getPageLines(pageIds)
   for (let id of pageIds) {
     let lines = pageLines[id]
-    if (!lines) continue
-    if (!lines.some(line => /infobox film/i.test(line))) continue
+    if (!lines?.some(line => /infobox film/i.test(line))) continue
     let releaseYear = extractYear(lines, /released/i)
     if (releaseYear) releaseYears[id] = releaseYear
   }

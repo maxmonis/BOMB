@@ -42,10 +42,6 @@ button {
   padding: 0.25rem 0.675rem;
 }
 
-button.red {
-  border-color: var(--red);
-}
-
 label {
   align-items: flex-start;
   display: flex;
@@ -252,6 +248,7 @@ dialog h1 {
 }
 
 .red {
+  border-color: var(--red);
   color: var(--red);
 }
 
@@ -278,6 +275,11 @@ dialog h1 {
 .search-container ul li > div:first-child {
   display: flex;
   flex-direction: column;
+  margin-block: 0.5rem;
+}
+
+.search-container ul li > span {
+  font-size: 1.125rem;
 }
 
 .game-rounds {
@@ -287,7 +289,7 @@ dialog h1 {
   margin-block: 1.25rem;
 }
 
-.round-box {
+.game-rounds > fieldset {
   border-radius: 8px;
   border-color: var(--gray);
   border-width: 1px;
@@ -296,14 +298,14 @@ dialog h1 {
   padding-inline: 0.75rem;
 }
 
-.round-entries {
+.game-rounds > fieldset > div {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 0.25rem;
 }
 
-.round-entry {
+.game-rounds > fieldset > div > div {
   background-color: var(--gray);
   color: color-mix(in oklab, var(--bg) 80%, transparent);
   padding: 0.25rem 0.5rem;

@@ -46,8 +46,9 @@ function init() {
         break
 
       case "game_state":
-        if (res.game.started) renderActiveGame(ws, res.game, userId!)
-        else renderPendingGame(ws, res.game, userId!)
+        if (!userId) reset()
+        else if (res.game.started) renderActiveGame(ws, res.game, userId)
+        else renderPendingGame(ws, res.game, userId)
         break
     }
   }

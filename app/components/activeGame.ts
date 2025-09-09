@@ -1,5 +1,4 @@
 import type { Page, SocketResponse } from "../../lib/types"
-import { hasChars } from "../../lib/utils"
 import { callAPI, sendRequest, wrapLabel } from "../client"
 import { pageContent, pageTitle, spinner } from "../elements"
 import { createLeaveGameDialog } from "./leaveGameDialog"
@@ -15,9 +14,9 @@ export function renderActiveGame(
   pageTitle.textContent = isCreator ? "Your Game" : `${creator.name}'s Game`
   pageContent.innerHTML = ""
 
+  let scoreboard = createScoreboard(game)
   let gameSubtitle = document.createElement("h2")
-  let scoreContainer = createScoreboard(game)
-  pageContent.append(scoreContainer, gameSubtitle)
+  pageContent.append(scoreboard, gameSubtitle)
 
   let currentRound = game.rounds[0] ?? []
   let previousAnswer = currentRound.at(-1)
@@ -55,11 +54,11 @@ export function renderActiveGame(
 
       if (previousAnswer) {
         let challengeButton = document.createElement("button")
-        challengeButton.textContent = "Challenge Previous Player"
-        challengeButton.classList.add("red")
         challengeButton.addEventListener("click", () => {
           sendRequest(ws, { key: "challenge" })
         })
+        challengeButton.classList.add("red")
+        challengeButton.textContent = "Challenge Previous Player"
         pageContent.append(challengeButton)
       }
 
@@ -68,11 +67,11 @@ export function renderActiveGame(
       pageTitle.textContent = "You've been challenged!"
 
       let giveUpButton = document.createElement("button")
-      giveUpButton.textContent = "Give Up"
-      giveUpButton.classList.add("red")
       giveUpButton.addEventListener("click", () =>
         sendRequest(ws, { key: "give_up" })
       )
+      giveUpButton.classList.add("red")
+      giveUpButton.textContent = "Give Up"
       pageContent.append(giveUpButton)
     }
 
@@ -121,50 +120,50 @@ function renderValidateAnswerDialog(
     if (e.target == dialog) dialog.close()
   })
 
-  let query = `was ${actor.title} in ${movie.title} (${movie.releaseYear})?`
-
-  let title = document.createElement("h1")
-  title.textContent = `So, ${query}`
-
   let valid = document.createElement("button")
-  valid.textContent = "Yes, correct"
-  valid.autofocus = true
   valid.addEventListener("click", () => {
     if (reviewingChallengeResponse)
       sendRequest(ws, { key: "mark_answer_correct" })
     dialog.close()
     dialog.remove()
   })
+  valid.autofocus = true
+  valid.textContent = "Yes, correct"
 
   let invalid = document.createElement("button")
-  invalid.classList.add("red")
-  invalid.textContent = "No, incorrect"
   invalid.addEventListener("click", () => {
     sendRequest(ws, { key: "mark_answer_incorrect" })
     dialog.close()
     dialog.remove()
   })
+  invalid.classList.add("red")
+  invalid.textContent = "No, incorrect"
 
   let buttons = document.createElement("div")
   buttons.classList.add("dialog-button-container")
   buttons.append(invalid, valid)
+
+  let query = `was ${actor.title} in ${movie.title} (${movie.releaseYear})?`
+
+  let title = document.createElement("h1")
+  title.textContent = `So, ${query}`
 
   let content = document.createElement("div")
   content.append(title, buttons)
   dialog.append(content)
 
   let link = document.createElement("a")
-  link.textContent = `Search "${query}"`
-  link.setAttribute("target", "_blank")
-  link.setAttribute("rel", "noopener")
-  link.setAttribute(
-    "href",
-    `https://www.google.com/search?q=${encodeURIComponent(query)}`
-  )
   link.addEventListener("click", () => {
     document.body.append(dialog)
     dialog.showModal()
   })
+  link.textContent = `Search "${query}"`
+  link.setAttribute(
+    "href",
+    `https://www.google.com/search?q=${encodeURIComponent(query)}`
+  )
+  link.setAttribute("rel", "noopener")
+  link.setAttribute("target", "_blank")
 
   pageContent.append(link)
 }
@@ -174,21 +173,21 @@ function createScoreboard(game: ActiveGame) {
   ul.classList.add("score-container")
 
   ul.append(
-    ...game.players.map(p => {
-      let li = document.createElement("li")
+    ...game.players.map(player => {
       let name = document.createElement("span")
-      name.textContent = p.name
+      name.textContent = player.name
 
       let letters = document.createElement("div")
       letters.append(
-        ..."BOMB".split("").map((letter, i) => {
+        ...["B", "O", "M", "B"].map((letter, i) => {
           let span = document.createElement("span")
           span.textContent = letter
-          if (p.letters > i) span.classList.add("red")
+          if (player.letters > i) span.classList.add("red")
           return span
         })
       )
 
+      let li = document.createElement("li")
       li.append(name, letters)
       return li
     })
@@ -215,31 +214,29 @@ function createRounds(
 }
 
 function createRound(round: Array<Page>, label: string) {
-  let fieldSet = document.createElement("fieldset")
-  fieldSet.classList.add("round-box")
+  let fieldset = document.createElement("fieldset")
 
-  let heading = document.createElement("legend")
-  heading.textContent = label
+  let legend = document.createElement("legend")
+  legend.textContent = label
 
   if (round.length == 0) {
     let text = document.createElement("p")
     text.textContent = "Waiting for the first movie..."
-    fieldSet.append(heading, text)
-    return fieldSet
+
+    fieldset.append(legend, text)
+    return fieldset
   }
 
   let entries = document.createElement("div")
-  entries.classList.add("round-entries")
 
   for (let { title } of round) {
     let entry = document.createElement("div")
-    entry.classList.add("round-entry")
     entry.textContent = title
     entries.hasChildNodes() ? entries.append("→", entry) : entries.append(entry)
   }
 
-  fieldSet.append(heading, entries)
-  return fieldSet
+  fieldset.append(legend, entries)
+  return fieldset
 }
 
 function renderSearchForm(
@@ -247,24 +244,30 @@ function renderSearchForm(
   allAnswers: Array<Page>,
   previousAnswer: Page | undefined
 ) {
-  let container = document.createElement("div")
-  container.classList.add("search-container")
-
-  let input = document.createElement("input")
-  input.autofocus = true
-
-  let results = document.createElement("ul")
-  let timeout: ReturnType<typeof setTimeout> | null = null
-
   let category =
     previousAnswer && "releaseYear" in previousAnswer ? "actor" : "movie"
 
+  let container = document.createElement("div")
+  container.classList.add("search-container")
+
+  let results = document.createElement("ul")
+
+  let timeout: ReturnType<typeof setTimeout> | null = null
+
+  let input = document.createElement("input")
   input.addEventListener("input", () => {
     if (timeout) clearTimeout(timeout)
+
     timeout = setTimeout(async () => {
-      let query = input.value.trim()
       results.innerHTML = ""
-      if (!hasChars(query, 3)) return
+
+      let query = input.value.trim()
+      if (!query) {
+        input.value = ""
+        input.focus()
+        return
+      }
+
       results.append(spinner)
 
       let pages = await callAPI<Page[]>(`search/${category}?q=${query}`)
@@ -277,19 +280,22 @@ function renderSearchForm(
         ...pages.map(page => {
           let li = document.createElement("li")
 
-          let text = document.createElement("div")
           let title = document.createElement("span")
           title.textContent = page.title.split(" (")[0]!
+
           let year = document.createElement("small")
           year.textContent =
             "birthYear" in page
               ? page.birthYear.toString()
               : page.releaseYear.toString()
+
+          let text = document.createElement("div")
           text.append(title, year)
 
           if (allAnswers.some(a => a.pageid == page.pageid)) {
             let check = document.createElement("span")
             check.textContent = "✅"
+
             li.append(text, check)
             return li
           }
@@ -307,6 +313,7 @@ function renderSearchForm(
       )
     }, 750)
   })
+  input.autofocus = true
 
   container.append(wrapLabel(`Search ${category}s`, input), results)
   pageContent.append(container)
