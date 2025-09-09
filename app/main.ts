@@ -1,6 +1,11 @@
 import type { SocketResponse } from "../lib/types"
 import "../style/global.css"
-import { createWebSocket, getUserIdFromToken, localToken } from "./client"
+import {
+  createWebSocket,
+  getUserIdFromToken,
+  localToken,
+  sendRequest
+} from "./client"
 import { renderActiveGame } from "./components/activeGame"
 import { renderLobby } from "./components/lobby"
 import { renderPendingGame } from "./components/pendingGame"
@@ -48,6 +53,7 @@ function init() {
       case "game_state":
         if (res.game.started) renderActiveGame(ws, res.game, userId!)
         else renderPendingGame(ws, res.game, userId!)
+        sendRequest(ws, res)
         break
     }
   }

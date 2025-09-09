@@ -48,6 +48,7 @@ export type SocketRequest =
   | { key: "challenge" }
   | { key: "create_game"; name: string }
   | { key: "deny_join_request"; userId: string }
+  | { key: "game_state"; game: ActiveGameResponse | PendingGameResponse }
   | { key: "give_up" }
   | { key: "leave_game" }
   | { key: "mark_answer_incorrect" }

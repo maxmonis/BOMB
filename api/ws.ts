@@ -3,11 +3,12 @@ import { WebSocket } from "ws"
 import type { Game, Socket, SocketRequest, SocketResponse } from "../lib/types"
 import { hasChars } from "../lib/utils"
 import { decrypt, encrypt } from "./jose"
+import { Redis } from "./redis"
 
 export let gameSockets = new Map<string, Socket>()
 let lobbySockets = new Set<Socket>()
 
-let games = new Map<string, Game>()
+let pendingGames = new Map<string, Game>()
 
 export async function onConnection(
   socket: WebSocket,
@@ -21,7 +22,17 @@ export async function onConnection(
   let gameId = hasChars(tokenValues?.gameId) ? tokenValues.gameId : null
   let userId = hasChars(tokenValues?.userId) ? tokenValues.userId : ""
 
-  let game = gameId ? games.get(gameId) : null
+  let pendingGame =
+    gameId && pendingGames.has(gameId)
+      ? { ...pendingGames.get(gameId)!, id: gameId }
+      : null
+
+  let cachedGame =
+    gameId && !pendingGame ? await new Redis(`game:${gameId}`).get() : null
+  let activeGame = gameId && cachedGame ? { ...cachedGame, id: gameId } : null
+
+  let game = activeGame ?? pendingGame
+
   let player = game && userId ? game.players.find(p => p.id == userId) : null
 
   if (game && player && userId) {
@@ -44,19 +55,25 @@ export async function onConnection(
     let req: SocketRequest = JSON.parse(rawData.toString())
 
     try {
-      // -------------------- Create Game --------------------
-      if (req.key == "create_game") {
-        player = { id: userId, name: req.name, status: "active" }
-        game = { players: [player] }
-        gameId = crypto.randomUUID()
+      // -------------------- Game State --------------------
+      if (req.key == "game_state") {
+        game = { id: gameId!, ...req.game }
+        player = game.players.find(p => p.id == userId)
+      }
 
-        games.set(gameId, game)
+      // -------------------- Create Game --------------------
+      else if (req.key == "create_game") {
+        player = { id: userId, name: req.name, status: "active" }
+        gameId = crypto.randomUUID()
+        game = { players: [player], id: gameId }
+
+        pendingGames.set(gameId, game)
         lobbySockets.delete(ws)
 
         let token = await encrypt({ gameId, userId })
         sendResponse(ws, { key: "token", token })
 
-        sendGameState(game)
+        await sendGameState(game)
 
         for (let socket of lobbySockets)
           sendResponse(socket, getAvailableGames())
@@ -64,9 +81,10 @@ export async function onConnection(
 
       // -------------------- Request to Join --------------------
       else if (req.key == "request_to_join") {
-        game = games.get(req.gameId)
+        if (!pendingGames.has(req.gameId)) throw "Game not found"
 
-        if (!game) throw "Game not found"
+        game = { ...pendingGames.get(req.gameId)!, id: req.gameId }
+
         if (game.rounds) {
           game = null
           throw "Game has already started"
@@ -85,7 +103,7 @@ export async function onConnection(
         let token = await encrypt({ gameId, userId })
         sendResponse(ws, { key: "token", token })
 
-        sendGameState(game)
+        await sendGameState(game)
       }
 
       // -------------------- Accept Join Request --------------------
@@ -105,7 +123,7 @@ export async function onConnection(
             message: "You've been admitted"
           })
 
-        sendGameState(game)
+        await sendGameState(game)
       }
 
       // -------------------- Deny Join Request --------------------
@@ -124,7 +142,7 @@ export async function onConnection(
         }
 
         game.players = game.players.filter(p => p.id != req.userId)
-        sendGameState(game)
+        await sendGameState(game)
       }
 
       // -------------------- Start Game --------------------
@@ -144,12 +162,15 @@ export async function onConnection(
 
         game.players = game.players.filter(p => !p.pending)
         game.rounds = [[]]
-        sendGameState(game)
+
+        pendingGames.delete(game.id)
+
+        await sendGameState(game)
       }
 
       // -------------------- Leave Game --------------------
       else if (req.key == "leave_game") {
-        if (!game || !gameId) throw "Game not found"
+        if (!game) throw "Game not found"
         if (!player) throw "Player not found"
 
         sendResponse(ws, { key: "invalid_token" })
@@ -168,7 +189,7 @@ export async function onConnection(
           let activePlayers = game.players.filter(p => (p.letters ?? 0) < 4)
 
           if (activePlayers.length == 1) {
-            games.delete(gameId)
+            await new Redis(`game:${game.id}`).delete()
             for (let socket of lobbySockets)
               sendResponse(socket, getAvailableGames())
             return
@@ -184,7 +205,7 @@ export async function onConnection(
             }
           }
 
-          sendGameState(game)
+          await sendGameState(game)
         } else {
           game.players = game.players.filter(p => p.id != userId)
 
@@ -196,8 +217,8 @@ export async function onConnection(
             delete newHost.pending
             delete newHost.message
 
-            sendGameState(game)
-          } else games.delete(gameId)
+            await sendGameState(game)
+          } else pendingGames.delete(game.id)
 
           for (let socket of lobbySockets)
             sendResponse(socket, getAvailableGames())
@@ -219,7 +240,7 @@ export async function onConnection(
           nextPlayer.status = challenged ? "reviewing" : "active"
         }
 
-        sendGameState(game)
+        await sendGameState(game)
       }
 
       // -------------------- Challenge --------------------
@@ -241,7 +262,7 @@ export async function onConnection(
           if (gameSockets.has(p.id))
             sendResponse(gameSockets.get(p.id)!, toastMessage)
 
-        sendGameState(game)
+        await sendGameState(game)
       }
 
       // -------------------- Give Up --------------------
@@ -274,7 +295,7 @@ export async function onConnection(
           nextPlayer.status = "active"
         }
 
-        sendGameState(game)
+        await sendGameState(game)
       }
 
       // -------------------- Mark Answer Correct --------------------
@@ -309,7 +330,7 @@ export async function onConnection(
           nextPlayer.status = "active"
         }
 
-        sendGameState(game)
+        await sendGameState(game)
       }
 
       // -------------------- Mark Answer Incorrect --------------------
@@ -348,7 +369,7 @@ export async function onConnection(
           nextPlayer.status = "active"
         }
 
-        sendGameState(game)
+        await sendGameState(game)
       }
     } catch (error) {
       sendResponse(ws, {
@@ -363,7 +384,7 @@ export async function onConnection(
   })
 }
 
-function findNextPlayer(game: Game) {
+function findNextPlayer(game: GameWithId) {
   let index = game.players.findIndex(p => p.status)
   if (index == -1) return null
 
@@ -375,7 +396,7 @@ function findNextPlayer(game: Game) {
   return game.players[nextIndex] ?? null
 }
 
-function findPreviousPlayer(game: Game) {
+function findPreviousPlayer(game: GameWithId) {
   let index = game.players.findIndex(p => p.status)
   if (index == -1) return null
 
@@ -390,11 +411,13 @@ function findPreviousPlayer(game: Game) {
 function getAvailableGames() {
   return {
     key: "available_games",
-    games: Array.from(games.entries()).flatMap(([id, { players, rounds }]) => {
-      if (rounds) return []
-      let [creator] = players
-      return creator ? { creatorName: creator.name, id } : []
-    })
+    games: Array.from(pendingGames.entries()).flatMap(
+      ([id, { players, rounds }]) => {
+        if (rounds) return []
+        let [creator] = players
+        return creator ? { creatorName: creator.name, id } : []
+      }
+    )
   } as const
 }
 
@@ -413,10 +436,14 @@ function getGameState({ players, rounds }: Game) {
   } as const
 }
 
-function sendGameState(game: Game) {
+async function sendGameState({ id, ...game }: GameWithId) {
   let gameState = getGameState(game)
+
   for (let p of game.players)
     if (gameSockets.has(p.id)) sendResponse(gameSockets.get(p.id)!, gameState)
+
+  if (!gameState.game.started) pendingGames.set(id, game)
+  else await new Redis(`game:${id}`).setex(game, 240)
 }
 
 function sendResponse(ws: Socket, res: SocketResponse) {
@@ -443,3 +470,7 @@ setInterval(() => {
         gameSockets.delete(id)
       }
 }, 30_000)
+
+interface GameWithId extends Game {
+  id: string
+}
