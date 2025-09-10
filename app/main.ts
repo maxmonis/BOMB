@@ -4,7 +4,7 @@ import { createWebSocket, getUserIdFromToken, localToken } from "./client"
 import { renderActiveGame } from "./components/activeGame"
 import { renderLobby } from "./components/lobby"
 import { renderPendingGame } from "./components/pendingGame"
-import { applyDark, showToast } from "./ui"
+import { applyDark, toast } from "./ui"
 
 if (location.pathname != "/") location.replace(location.origin)
 
@@ -24,11 +24,11 @@ function init() {
 
     switch (res.key) {
       case "toast":
-        showToast(res.message)
+        toast.show(res.message)
         break
 
       case "error":
-        showToast(`Error: ${res.message}`)
+        toast.show(`Error: ${res.message}`)
         break
 
       case "token":

@@ -1,7 +1,7 @@
 import type { SocketResponse } from "../../lib/types"
 import { sendRequest, wrapLabel } from "../client"
 import { pageContent, pageTitle } from "../elements"
-import { showToast } from "../ui"
+import { toast } from "../ui"
 
 let gameList: Extract<SocketResponse, { key: "available_games" }>["games"] = []
 let pendingGameId: string | null = null
@@ -12,7 +12,7 @@ export function renderLobby(ws: WebSocket, games = gameList) {
   if (pendingGameId)
     if (gameList.some(g => g.id == pendingGameId)) return
     else {
-      showToast("Game was deleted")
+      toast.show("Game was deleted")
       pendingGameId = null
     }
 

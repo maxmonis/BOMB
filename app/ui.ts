@@ -1,4 +1,8 @@
+import { Toast } from "htm-elements"
+import "htm-elements/styles.css"
 import { darkChannel, localDark } from "./client"
+
+export let toast = new Toast()
 
 let defaultDark = window.matchMedia("(prefers-color-scheme: dark)").matches
 let dark = localDark.get() ?? defaultDark
@@ -28,38 +32,3 @@ toggleContainer.classList.add("theme-toggle-container")
 toggleContainer.append(darkToggle)
 
 document.querySelector("footer")!.prepend(toggleContainer)
-
-let toast = document.createElement("div")
-toast.classList.add("toast")
-toast.role = "alert"
-
-let toastTimeout: ReturnType<typeof setTimeout>
-
-function removeToast() {
-  if (!document.body.contains(toast)) return
-
-  return new Promise(resolve => {
-    clearTimeout(toastTimeout)
-
-    toast.classList.add("exit")
-
-    toastTimeout = setTimeout(() => {
-      toast.classList.remove("enter", "exit")
-      toast.remove()
-      resolve(true)
-    }, 250)
-  })
-}
-
-export async function showToast(message: string, durationMS = 3000) {
-  await removeToast()
-
-  toast.innerHTML = message
-
-  document.body.append(toast)
-
-  toastTimeout = setTimeout(() => {
-    toast.classList.add("enter")
-    toastTimeout = setTimeout(removeToast, durationMS)
-  }, 50)
-}
