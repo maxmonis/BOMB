@@ -76,7 +76,7 @@ export async function callAPI<T>(
 export function createWebSocket(token: string | null) {
   return new WebSocket(
     `${location.protocol.replace("http", "ws")}//${location.host}/ws${
-      token ? `?token=${token}` : ""
+      token ? `/game?token=${token}` : "/lobby"
     }`
   )
 }
