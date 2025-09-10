@@ -110,34 +110,13 @@ dialog h1 {
 }
 
 htm-toast {
+  --htm-bg: var(--fg);
+  --htm-fg: var(--bg);
   line-height: 1.3;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .spinner {
-    display: none;
-  }
-}
-
-.spinner {
-  animation: 1.25s linear spinner infinite;
-  height: 2rem;
-  margin-block: 1rem;
-  width: 2rem;
-}
-
-@keyframes spinner {
-  0% {
-    stroke-dashoffset: 502;
-    stroke-dasharray: 150.6 100.4;
-  }
-  50% {
-    stroke-dasharray: 1 250;
-  }
-  100% {
-    stroke-dashoffset: 0;
-    stroke-dasharray: 150.6 100.4;
-  }
+htm-spinner {
+  margin-block: 1.25rem;
 }
 
 .page-content {

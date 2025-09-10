@@ -28,7 +28,7 @@ function init() {
         break
 
       case "error":
-        toast.show(`Error: ${res.message}`)
+        toast.show(res.message, { variant: "danger" })
         break
 
       case "token":
