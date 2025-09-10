@@ -32,5 +32,5 @@
     "dev": "concurrently -n client,server \"vite --host\" \"nodemon --watch api --ext ts --exec 'node esbuild.mjs && node .build/api/server.js'\"",
     "prod": "vite build --emptyOutDir --mode development && node esbuild.mjs && NODE_ENV=production PORT=3000 node .build/api/server.js"
   },
-  "version": "0.1.2"
+  "version": "0.1.3"
 }
