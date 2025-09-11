@@ -17,9 +17,18 @@ export async function onConnection(
 
   let token = new URL(url!, `http://${headers.host}`).searchParams.get("token")
 
-  let tokenValues = token ? await decrypt(token) : null
-  let gameId = hasChars(tokenValues?.gameId) ? tokenValues.gameId : null
-  let userId = hasChars(tokenValues?.userId) ? tokenValues.userId : ""
+  let gameId: string | null = null
+  let userId = ""
+
+  if (token)
+    try {
+      let tokenValues = await decrypt(token)
+      if (hasChars(tokenValues?.gameId)) gameId = tokenValues.gameId
+      if (hasChars(tokenValues?.userId)) userId = tokenValues.userId
+    } catch (error) {
+      sendResponse(ws, { key: "invalid_token" })
+      return
+    }
 
   let game = gameId ? games.get(gameId) : null
   let player = game && userId ? game.players.find(p => p.id == userId) : null
