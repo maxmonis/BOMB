@@ -86,8 +86,6 @@ function init() {
 
       ws = createWebSocket(token)
       initSocket()
-
-      toast.show("Attempting to reconnect...")
     }, reconnectDelay)
   }
 
