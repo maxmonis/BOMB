@@ -75,14 +75,7 @@ function init() {
       reconnectAttempts++
       reconnectDelay *= 2
 
-      ws.onclose = null
-      ws.onerror = null
-
-      if (
-        ws.readyState === WebSocket.OPEN ||
-        ws.readyState === WebSocket.CONNECTING
-      )
-        ws.close()
+      closeSocket()
 
       ws = createWebSocket(token)
       initSocket()
@@ -90,15 +83,19 @@ function init() {
   }
 
   function reset() {
+    closeSocket()
+    init()
+  }
+
+  function closeSocket() {
     ws.onclose = null
     ws.onerror = null
+    ws.onmessage = null
 
     if (
       ws.readyState == WebSocket.OPEN ||
       ws.readyState == WebSocket.CONNECTING
     )
       ws.close()
-
-    init()
   }
 }
