@@ -26,9 +26,6 @@ function init() {
     ws.onerror = handleDisconnect
 
     ws.onmessage = ({ data }) => {
-      reconnectAttempts = 0
-      reconnectDelay = 1000
-
       let res: SocketResponse = JSON.parse(data)
 
       switch (res.key) {
@@ -60,6 +57,11 @@ function init() {
           else renderPendingGame(ws, res.game, userId)
           break
       }
+    }
+
+    ws.onopen = () => {
+      reconnectAttempts = 0
+      reconnectDelay = 1000
     }
   }
 
