@@ -1,3 +1,4 @@
+import { Confetti } from "htm-elements"
 import type { Page, SocketResponse } from "../../lib/types"
 import { callAPI, sendRequest, wrapLabel } from "../client"
 import { pageContent, pageTitle, spinner } from "../elements"
@@ -29,11 +30,13 @@ export function renderActiveGame(
 
   // -------------------- Game Over --------------------
   if (winner) {
+    let isWinner = winner.id == userId
+    if (isWinner) new Confetti().start()
+
     pageTitle.textContent = "Game Over"
-    gameSubtitle.textContent =
-      winner.id == userId
-        ? "Congratulations, you're the winner!"
-        : `${winner.name} wins. Better luck next time!`
+    gameSubtitle.textContent = isWinner
+      ? "Congratulations, you're the winner!"
+      : `${winner.name} wins. Better luck next time!`
   }
 
   // -------------------- Active or Challenged --------------------
