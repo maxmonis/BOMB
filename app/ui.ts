@@ -2,7 +2,7 @@ import { Toast } from "htm-elements"
 import "htm-elements/styles.css"
 import { darkChannel, localDark } from "./client"
 
-export let toast = new Toast()
+export let toast = new Toast({ position: "top-right" })
 
 let defaultDark = window.matchMedia("(prefers-color-scheme: dark)").matches
 let dark = localDark.get() ?? defaultDark
