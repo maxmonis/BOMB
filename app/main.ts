@@ -16,51 +16,91 @@ function init() {
   let userId = getUserIdFromToken(token)
   let ws = createWebSocket(token)
 
-  ws.onclose = reset
-  ws.onerror = reset
+  let reconnectAttempts = 0
+  let reconnectDelay = 1000
 
-  ws.onmessage = ({ data }) => {
-    let res: SocketResponse = JSON.parse(data)
+  initSocket()
 
-    switch (res.key) {
-      case "toast":
-        toast.show(res.message)
-        break
+  function initSocket() {
+    ws.onclose = handleDisconnect
+    ws.onerror = handleDisconnect
 
-      case "error":
-        toast.show(res.message, { variant: "danger" })
-        break
+    ws.onmessage = ({ data }) => {
+      reconnectAttempts = 0
+      reconnectDelay = 1000
 
-      case "token":
-        localToken.set(res.token)
-        reset()
-        break
+      let res: SocketResponse = JSON.parse(data)
 
-      case "invalid_token":
-        localToken.remove()
-        reset()
-        break
+      switch (res.key) {
+        case "toast":
+          toast.show(res.message)
+          break
 
-      case "available_games":
-        renderLobby(ws, res.games)
-        break
+        case "error":
+          toast.show(res.message, { variant: "danger" })
+          break
 
-      case "game_state":
-        if (!userId) reset()
-        else if (res.game.started) renderActiveGame(ws, res.game, userId)
-        else renderPendingGame(ws, res.game, userId)
-        break
+        case "token":
+          localToken.set(res.token)
+          reset()
+          break
+
+        case "invalid_token":
+          localToken.remove()
+          reset()
+          break
+
+        case "available_games":
+          renderLobby(ws, res.games)
+          break
+
+        case "game_state":
+          if (!userId) reset()
+          else if (res.game.started) renderActiveGame(ws, res.game, userId)
+          else renderPendingGame(ws, res.game, userId)
+          break
+      }
     }
+  }
+
+  function handleDisconnect() {
+    if (reconnectAttempts > 4) {
+      toast.show("Connection lost. Please refresh the page.", {
+        variant: "danger"
+      })
+      return
+    }
+
+    setTimeout(() => {
+      reconnectAttempts++
+      reconnectDelay *= 2
+
+      ws.onclose = null
+      ws.onerror = null
+
+      if (
+        ws.readyState === WebSocket.OPEN ||
+        ws.readyState === WebSocket.CONNECTING
+      )
+        ws.close()
+
+      ws = createWebSocket(token)
+      initSocket()
+
+      toast.show("Attempting to reconnect...")
+    }, reconnectDelay)
   }
 
   function reset() {
     ws.onclose = null
     ws.onerror = null
+
     if (
       ws.readyState == WebSocket.OPEN ||
       ws.readyState == WebSocket.CONNECTING
     )
       ws.close()
+
     init()
   }
 }
