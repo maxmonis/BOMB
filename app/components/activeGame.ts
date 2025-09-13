@@ -287,10 +287,9 @@ function renderSearchForm(
           title.textContent = page.title.split(" (")[0]!
 
           let year = document.createElement("small")
-          year.textContent =
-            "birthYear" in page
-              ? page.birthYear.toString()
-              : page.releaseYear.toString()
+          if ("releaseYear" in page)
+            year.textContent = page.releaseYear.toString()
+          else if (page.birthYear) year.textContent = page.birthYear.toString()
 
           let text = document.createElement("div")
           text.append(title, year)

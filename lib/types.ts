@@ -12,7 +12,7 @@ interface ActiveGameResponse {
 }
 
 export interface ActorPage extends WikiPage {
-  birthYear: number
+  birthYear: number | null
 }
 
 export interface Game {

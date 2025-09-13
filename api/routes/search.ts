@@ -25,8 +25,8 @@ function extractYear(lines: Array<string>, regex: RegExp) {
   return matches ? parseInt(matches[0]) : null
 }
 
-function getDescription(lines: Array<string>) {
-  return lines.find(line => /short description/i.test(line))
+function getOccupation(lines: Array<string>) {
+  return lines.find(line => /occupation/i.test(line))
 }
 
 async function getPageLines(ids: Array<string>) {
@@ -51,20 +51,24 @@ async function getPageLines(ids: Array<string>) {
 
 async function searchActors(term: string) {
   let results = await searchWiki(term.trim() + " (actor)")
-  let birthYears: Record<string, number> = {}
+  let birthYears: Record<string, number | null> = {}
   let ids = results.map(r => r.pageid.toString())
   let pageLines = await getPageLines(ids)
   for (let id of ids) {
     let lines = pageLines[id]
     if (!lines) continue
-    let description = getDescription(lines)
-    if (!description || !/actor|actress/i.test(description)) continue
-    let birthYear = extractYear(lines, /birth_date/i)
-    if (birthYear) birthYears[id] = birthYear
+    let occupation = getOccupation(lines)
+    if (!occupation || !/\bact(or|ress)\b/i.test(occupation)) continue
+    birthYears[id] = extractYear(lines, /birth_date/i)
   }
   return results.flatMap<ActorPage>(({ pageid, title }) => {
-    let birthYear = birthYears[pageid]
-    return birthYear ? { birthYear, pageid, title: title.split(" (")[0]! } : []
+    return pageid in birthYears
+      ? {
+          birthYear: birthYears[pageid]!,
+          pageid,
+          title: title.split(" (")[0]!
+        }
+      : []
   })
 }
 
