@@ -37,6 +37,7 @@ button {
   border-width: 1px;
   background: none;
   cursor: pointer;
+  flex-shrink: 0;
   font-size: inherit;
   margin-block: 0.75rem;
   padding: 0.25rem 0.675rem;
