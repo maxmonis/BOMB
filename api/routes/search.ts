@@ -19,14 +19,28 @@ searchRoute.get("/:category", authToken, async (req, res) => {
 })
 
 function extractYear(lines: Array<string>, regex: RegExp) {
-  let line = lines.find(line => regex.test(line))
-  if (!line || !/^\s*\|.*/.test(line)) return null
-  let matches = line.match(/\b(19|20)\d{2}\b/)
-  return matches ? parseInt(matches[0]) : null
+  let max = Math.min(100, lines.length)
+  for (let i = 0; i < max; i++) {
+    let line = lines[i]!
+    if (regex.test(line) && /^\s*\|.*/.test(line)) {
+      let matches = line.match(/\b(19|20)\d{2}\b/)
+      return matches ? parseInt(matches[0]) : null
+    }
+  }
+  return null
 }
 
 function getOccupation(lines: Array<string>) {
-  return lines.find(line => /occupation/i.test(line))
+  let max = Math.min(100, lines.length)
+  for (let i = 0; i < max; i++) {
+    let line = lines[i]!
+    if (/occupation/i.test(line)) {
+      if (/flat\s?list/i.test(line))
+        while (!line.includes("}}")) line += lines[i++]
+      return line
+    }
+  }
+  return null
 }
 
 async function getPageLines(ids: Array<string>) {
