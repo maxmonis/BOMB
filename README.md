@@ -30,7 +30,6 @@ eliminated is the winner.
 
 This is a simple express server with a frontend written in TypeScript, HTML, and
 CSS. It uses web sockets to keep track of the game state. There's no database.
-The frontend has zero production dependencies.
 
 ### Development
 
