@@ -1,4 +1,4 @@
-import { Spinner } from "htm-elements"
+import { Spinner } from "htm-elements/spinner"
 
 export let pageTitle = document.querySelector("h1")!
 

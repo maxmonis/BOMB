@@ -1,4 +1,4 @@
-import { Confetti } from "htm-elements"
+import { Confetti } from "htm-elements/confetti"
 import type { Page, SocketResponse } from "../../lib/types"
 import { callAPI, sendRequest, wrapLabel } from "../client"
 import { pageContent, pageTitle, spinner } from "../elements"

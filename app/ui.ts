@@ -1,5 +1,5 @@
-import { Toast } from "htm-elements"
 import "htm-elements/styles.css"
+import { Toast } from "htm-elements/toast"
 import { darkChannel, localDark } from "./client"
 
 export let toast = new Toast({ position: "top-right" })
