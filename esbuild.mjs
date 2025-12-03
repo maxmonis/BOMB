@@ -1,10 +1,11 @@
-import { build } from "esbuild"
-import { readFileSync, rmSync } from "fs"
+import { readFileSync, rmSync } from "fs";
 
-let { version } = JSON.parse(readFileSync("package.json", "utf8"))
-let production = process.env.NODE_ENV == "production"
+import { build } from "esbuild";
 
-rmSync(".build/api", { force: true, recursive: true })
+const { version } = JSON.parse(readFileSync("package.json", "utf8"));
+const production = process.env.NODE_ENV === "production";
+
+rmSync(".build/api", { force: true, recursive: true });
 
 build({
   bundle: true,
@@ -16,7 +17,7 @@ build({
   platform: "node",
   sourcemap: !production,
   target: "node22.17.0",
-  tsconfig: production ? "tsconfig.prod.json" : "tsconfig.json"
+  tsconfig: production ? "tsconfig.prod.json" : "tsconfig.json",
 }).catch(() => {
-  process.exit(1)
-})
+  process.exit(1);
+});

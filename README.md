@@ -47,6 +47,14 @@ npm run prod
 
 You'll need to manually stop and restart the server if you make changes.
 
+### Formatting
+
+To lint the code and automatically format it, run:
+
+```bash
+npm run lint
+```
+
 ### Deployment
 
 To deploy on Fly.io using the Dockerfile, run:

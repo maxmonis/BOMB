@@ -1,9 +1,9 @@
-import { Spinner } from "htm-elements/spinner"
+import { Spinner } from "htm-elements/spinner";
 
-export let pageTitle = document.querySelector("h1")!
+export const pageTitle = document.querySelector("h1")!;
 
-export let pageContent = document.createElement("div")
-pageContent.classList.add("page-content")
-pageTitle.after(pageContent)
+export const pageContent = document.createElement("div");
+pageContent.classList.add("page-content");
+pageTitle.after(pageContent);
 
-export let spinner = new Spinner(32)
+export const spinner = new Spinner(32);

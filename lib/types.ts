@@ -1,47 +1,47 @@
-import type { WebSocket } from "ws"
+import { type WebSocket } from "ws";
 
 interface ActiveGamePlayer
   extends Omit<Player, "letters" | "message" | "pending"> {
-  letters: number
+  letters: number;
 }
 
 interface ActiveGameResponse {
-  players: Array<ActiveGamePlayer>
-  rounds: Array<Array<Page>>
-  started: true
+  players: Array<ActiveGamePlayer>;
+  rounds: Array<Array<Page>>;
+  started: true;
 }
 
 export interface ActorPage extends WikiPage {
-  birthYear: number | null
+  birthYear: number | null;
 }
 
 export interface Game {
-  players: Array<Player>
-  rounds?: Array<Array<Page>>
+  players: Array<Player>;
+  rounds?: Array<Array<Page>>;
 }
 
 export interface MoviePage extends WikiPage {
-  releaseYear: number
+  releaseYear: number;
 }
 
-export type Page = ActorPage | MoviePage
+export type Page = ActorPage | MoviePage;
 
 interface PendingGameResponse {
-  players: Array<Omit<Player, "letters" | "status">>
-  started: false
+  players: Array<Omit<Player, "letters" | "status">>;
+  started: false;
 }
 
 interface Player {
-  id: string
-  letters?: number
-  message?: string
-  name: string
-  pending?: boolean
-  status?: "active" | "challenged" | "reviewing"
+  id: string;
+  letters?: number;
+  message?: string;
+  name: string;
+  pending?: boolean;
+  status?: "active" | "challenged" | "reviewing";
 }
 
 export interface Socket extends WebSocket {
-  alive: boolean
+  alive: boolean;
 }
 
 export type SocketRequest =
@@ -55,21 +55,21 @@ export type SocketRequest =
   | { key: "mark_answer_incorrect" }
   | { key: "play_move"; page: Page }
   | { key: "request_to_join"; gameId: string; message: string; name: string }
-  | { key: "start_game" }
+  | { key: "start_game" };
 
 export type SocketResponse =
   | {
-      key: "available_games"
-      games: Array<{ creatorName: string; id: string }>
+      key: "available_games";
+      games: Array<{ creatorName: string; id: string }>;
     }
   | { key: "error"; message: string }
   | { key: "game_state"; game: ActiveGameResponse | PendingGameResponse }
   | { key: "invalid_token" }
   | { key: "join_request_denied" }
   | { key: "toast"; message: string }
-  | { key: "token"; token: string }
+  | { key: "token"; token: string };
 
 interface WikiPage {
-  pageid: number
-  title: string
+  pageid: number;
+  title: string;
 }
